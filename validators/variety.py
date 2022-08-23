@@ -1,4 +1,5 @@
 from marshmallow import Schema, fields, ValidationError, post_load, validate
+from models.collector_product import CollectorProductModel
 
 from models.collector_variety import CollectorVarietyModel
 
@@ -16,4 +17,15 @@ class VarietySchema(Schema):
     def make_variety(self, data, **kwargs):
         return CollectorVarietyModel(**data)
 
+
+def validate_code(val):
+    product = CollectorProductModel.find_by_code(val)
+    if not product:
+        raise ValidationError('Product not found')
+
+class NewVarietySchema(Schema):
+    mobile_id = fields.Integer( validate=validate.Range(min=1), required=True, error_messages={"required": "mobile_id is required."})
+    code =  fields.String( validate=[validate_code], required=True, error_messages={"required": "code is required."})
+    name=  fields.String( required=True, error_messages={"required": "name is required."})
+   
 

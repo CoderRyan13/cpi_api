@@ -47,6 +47,10 @@ class CollectorProductModel(db.Model):
             return cls.query.filter_by(id=id).first()
 
     @classmethod
+    def find_by_code(cls, code):
+            return cls.query.filter_by(code=code).first()
+
+    @classmethod
     def find_all(cls, _args):
         search = _args.get('search', '')
         limit = _args.get('limit', 200)

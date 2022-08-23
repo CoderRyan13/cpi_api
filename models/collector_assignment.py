@@ -1,20 +1,13 @@
 from datetime import date, datetime
-import json
-from db import db, cpi_db
+from db import db, cpi_db, portal_db
 import enum
 from sqlalchemy import Enum
 
+# This includes February, May, August, and November
+QUARTERLY_MONTHS = ['2', '5', '8', '11']
 
-class StatusEnum(enum.Enum):
-    active = 'active'
-    inactive = 'inactive'
-    rejected = 'rejected'
+# ______________________ COLLECTOR ASSIGNMENT ______________________
 
-    def __json__(self):
-        return self.value
-
-    def __str__(self):
-        return self.value
 
 class AssignmentModel(db.Model):
 
@@ -27,7 +20,7 @@ class AssignmentModel(db.Model):
     time_period = db.Column(db.Date, nullable=False)
     outlet_id = db.Column(db.Integer, nullable=False)
     outlet_name = db.Column(db.String(255), nullable=False)
-    variety_id = db.Column(db.Integer, nullable=False)
+    variety_id = db.Column(db.Integer, db.ForeignKey("collector_variety.id"), nullable=False)
     variety_name = db.Column(db.String(255), nullable=False)
     code = db.Column(db.String(255), nullable=False)
     approved_by = db.Column(db.Integer, nullable=True)
@@ -35,11 +28,16 @@ class AssignmentModel(db.Model):
     collector_id = db.Column(db.Integer, nullable=False)
     collector_name = db.Column(db.String(255), nullable=False)
     last_collected = db.Column(db.DateTime, nullable=True)
+    collected_at = db.Column(db.DateTime, nullable=True)
+    can_substitute = db.Column(db.Integer, nullable=False)
     create_date_time = db.Column(db.DateTime, nullable=False)
     update_date_time = db.Column(db.DateTime, nullable=False)
-    status = db.Column(Enum(StatusEnum), nullable=False)    # active, inactive, rejected
+    status = db.Column( db.Enum("active", "inactive", "rejected", "approved"), nullable=False) 
 
     substitution = db.relationship('SubstitutionModel', backref='assignment', uselist=False, lazy=True)
+    variety = db.relationship('CollectorVarietyModel', backref='assignment', uselist=False, lazy=True)
+    requested_substitution = db.relationship('RequestedSubstitutionModel', backref='assignment', uselist=False, lazy=True)
+    
 
     def __init__(
     self, 
@@ -53,14 +51,14 @@ class AssignmentModel(db.Model):
     collector_id, 
     collector_name,
     time_period: date,
-    last_collected=None, _id=None, approved_by=None, date_approved=None, substitution=None, create_date_time=None, update_date_time=None):
+    last_collected: date, _id=None, approved_by=None, date_approved=None, substitution=None, create_date_time=None, update_date_time=None):
 
         self.id = _id
         self.outlet_product_variety_id = outlet_product_variety_id
         self.comment = ""
         self.new_price = None
         self.previous_price = previous_price
-        self.time_period = f'{time_period.year}-{time_period.month}-01'
+        self.time_period = f'{time_period.year}-{time_period.month}-01' 
         self.outlet_id = outlet_id
         self.outlet_name = outlet_name
         self.variety_id = variety_id
@@ -74,7 +72,7 @@ class AssignmentModel(db.Model):
         self.substitution = substitution
         self.create_date_time = create_date_time
         self.update_date_time = update_date_time
-        self.status = StatusEnum.inactive
+        self.status = 'active'
 
     def json(self):
 
@@ -82,8 +80,8 @@ class AssignmentModel(db.Model):
             "id": self.id,
             "outlet_product_variety_id": self.outlet_product_variety_id,
             "comment": self.comment,
-            "new_price": self.new_price,
-            "previous_price": str(self.previous_price),
+            "new_price": str(self.new_price) if self.new_price else None,
+            "previous_price": str(self.previous_price) if self.previous_price else None,
             "time_period": str(self.time_period),
             "outlet_id": self.outlet_id,
             "outlet_name": self.outlet_name,
@@ -91,14 +89,18 @@ class AssignmentModel(db.Model):
             "variety_name": self.variety_name,
             "code": self.code,
             "substitution": self.substitution.json() if self.substitution else None,
+            "requested_substitution": self.requested_substitution.json() if self.requested_substitution else None,
             "approved_by": self.approved_by,
             "date_approved": str(self.date_approved) if self.date_approved  else None,
             "collector_id": self.collector_id,
             "collector_name": self.collector_name,
             "last_collected":  str(self.last_collected) if self.last_collected else None,
+            "collected_at":  str(self.collected_at) if self.collected_at else None,
+            "can_substitute":  True if self.can_substitute else False,
             "create_date_time": str(self.create_date_time) if self.create_date_time  else None,
             "update_date_time": str(self.update_date_time) if self.update_date_time  else None,
-            "status": str(self.status),
+            "variety": self.variety.json() if self.variety else None,
+            "status": self.status,
         }
     
     def __str__(self): 
@@ -151,9 +153,15 @@ class AssignmentModel(db.Model):
             self.last_collected = cpi_assignment.last_collected
             db.session.commit()
 
-    def update_status(self, status: StatusEnum):
+    def update_status(self, status):
         self.status = status
         self.update_date_time = datetime.now()
+        db.session.commit()
+
+    def update_assignment_price(self, new_price, collected_at):
+        self.status = "active"
+        self.new_price = new_price
+        self.collected_at = collected_at
         db.session.commit()
 
     @classmethod
@@ -162,9 +170,46 @@ class AssignmentModel(db.Model):
 
     @classmethod
     def find_by_collector(cls, collector_id):
+
+        #Get the current time period
         datetime_now = datetime.now()
-        period = f"{datetime_now.year}-{datetime_now.month}-01"
-        return cls.query.filter_by(collector_id=collector_id, time_period=period).all()
+        period = datetime.now().strftime("%Y-%m-01")
+
+        # verify if the current time period includes only the monthly varieties 
+        is_quarterly_period = datetime_now.month in QUARTERLY_MONTHS
+
+        assignments = []
+
+        # if is quarterly period, get all the assignments, otherwise only the monthly
+        if is_quarterly_period:
+            assignments = cls.query.filter_by(collector_id=collector_id, time_period=period ).all()
+            assignments = [assignment for assignment in assignments if assignment.variety.is_headquarter == 0] 
+
+        else :
+            assignments = cls.query.filter_by(collector_id=collector_id, time_period=period).all()
+            assignments = [assignment for assignment in assignments if (assignment.variety.is_headquarter == 0 and assignment.variety.is_monthly == 1)] 
+
+        # filter the ones that are not automated assignments
+        assignments = [assignment for assignment in assignments if assignment.get_automated_assignment() is None]
+
+        
+        return assignments
+
+
+    def get_automated_assignment(self):
+
+        query = """SELECT 
+                        id, 
+                        code, 
+                        outlet_id, 
+                        from_outlet_id 
+                    FROM automated_assignment 
+                    WHERE outlet_id = %s AND code = %s"""
+
+        portal_db.execute(query, (self.outlet_id, self.code))
+        automated_assignment = portal_db.fetchone()
+        return automated_assignment if automated_assignment else None
+
 
     @classmethod
     def find_by_opv_id_and_time_period_and_collector_id(cls, opv_id, time_period, collector_id):

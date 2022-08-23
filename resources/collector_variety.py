@@ -2,10 +2,11 @@ from flask_restful import Resource, request
 from marshmallow import ValidationError
 
 from models.collector_variety import CollectorVarietyModel
-from validators.variety import VarietySchema
+from validators.variety import NewVarietySchema, VarietySchema
 from validators.errors import NotFoundError, ServerError
 
 varietySchema = VarietySchema()
+newVarietySchema = NewVarietySchema()
 
 class CollectorVarietyList(Resource):
     
@@ -13,17 +14,21 @@ class CollectorVarietyList(Resource):
         return [variety.json() for variety in CollectorVarietyModel.find_all()] 
 
     def post(self):
+
+        # get the list of outlets expected to be created        
         try:
-            raw_variety = request.get_json(silent=True)
-            print(raw_variety)
-            variety = varietySchema.load(raw_variety)
-            variety.save_to_db()
-            return variety.json() , 201
+            raw_data = request.get_json()
+            print(raw_data)
+            if not isinstance(raw_data, list):
+                raise ValidationError(["Expected a list of Varieties"])
+
+            varieties = [newVarietySchema.load(raw_variety) for raw_variety in raw_data]
+            varieties = CollectorVarietyModel.insert_many(varieties)
+            return varieties, 201
 
         except ValidationError as err:
-           print(err)
-           return {"errors": err.messages}, 400
-
+            print(err)
+            return {"errors": err.messages}, 400
         except Exception as err:
             print(err)
             raise ServerError()

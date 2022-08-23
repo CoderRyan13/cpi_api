@@ -1,0 +1,1 @@
+pip install mysql flask flask-restful flask-jwt-extended flask-sqlalchemy sqlalchemy marshmallow flask_cors mysql-connector

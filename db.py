@@ -4,19 +4,29 @@ from mysql.connector import Error
 
 db = SQLAlchemy()
 
-conn = mysql.connector.connect(host='192.168.0.3',
-                                         database='cpi2',
-                                         user='sib_gian',
-                                         password='Letmein123!')
 
-cpi_db = conn.cursor()
+# cpi_test_db_connection = mysql.connector.connect(host='localhost',
+#                                          database='cpi-1-test',
+#                                          user='root',
+#                                          password='mysql')
+
+# cpi_test_db = cpi_test_db_connection.cursor()
+
+cpi_db_connection = mysql.connector.connect(host='localhost',
+                                        #  database='cpi2',
+                                         database='cpi-1-test',
+                                         user='root',
+                                         password='mysql')
+
+
+cpi_db = cpi_db_connection.cursor()
 
 
 
-conn2 = mysql.connector.connect(host='localhost',
+portal_db_connection = mysql.connector.connect(host='localhost',
                                          database='cpi-collector',
                                          user='root',
                                          password='mysql')
 
-portal_db = conn2.cursor()
+portal_db = portal_db_connection.cursor()
 

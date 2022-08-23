@@ -17,5 +17,7 @@ class Form:
         """
         portal_db.execute(query)
         collectors = portal_db.fetchall()
+        print(collectors)
         collectors = [{ 'collector_id': collector[0], 'collector_name': collector[1] } for collector in collectors]
         return collectors
+ 

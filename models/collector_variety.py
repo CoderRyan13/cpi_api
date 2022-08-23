@@ -1,4 +1,5 @@
 from datetime import datetime
+from re import S
 from db import db, portal_db
 
 class CollectorVarietyModel(db.Model):
@@ -11,6 +12,8 @@ class CollectorVarietyModel(db.Model):
     code = db.Column(db.String(80), nullable=False)
     approved_by = db.Column(db.Integer, nullable=True)
     date_approved = db.Column(db.DateTime, nullable=True)
+    is_headquarter = db.Column(db.Integer, nullable=True)
+    is_monthly = db.Column(db.Integer, nullable=True)
     product_id = db.Column(db.Integer, db.ForeignKey('collector_product.id') ,  nullable=False)
 
     def __init__(self, name, code, product_id, cpi_variety_id=None, approved_by=None, date_approved=None, _id=None):
@@ -30,6 +33,8 @@ class CollectorVarietyModel(db.Model):
             'code': self.code,
             'product_id': self.product_id,
             'approved_by': self.approved_by,
+            'is_headquarter': self.is_headquarter,
+            'is_monthly': self.is_monthly,
             'date_approved': str(self.date_approved) if self.date_approved else None
         }
 
@@ -58,27 +63,30 @@ class CollectorVarietyModel(db.Model):
     @classmethod
     def find_by_collector(cls, collector_id):
 
-        datetime_now = datetime.now()
-        period = f"{datetime_now.year}-{datetime_now.month}-01"
-
+        period = datetime.now().strftime("%Y-%m-01")
 
         query = """
             SELECT DISTINCT 
-                collector_variety.cpi_variety_id, 
+                collector_variety.id, 
                 collector_variety.name, 
                 collector_variety.code
             FROM collector_variety 
             WHERE collector_variety.product_id IN (
-            	
                 SELECT c_v.product_id
                 FROM assignment
-                JOIN collector_variety as c_v on c_v.cpi_variety_id = assignment.variety_id
+                JOIN collector_variety as c_v on c_v.id = assignment.variety_id 
                	WHERE assignment.collector_id = %s
             	AND assignment.time_period = %s
-                AND collector_variety.cpi_variety_id IS NOT NULL
+                AND collector_variety.id IS NOT NULL
+            ) OR collector_variety.id IN (
+                SELECT sub.variety_id
+				FROM substitution as sub
+				JOIN assignment on assignment.id = sub.assignment_id
+                WHERE assignment.collector_id = %s
+                AND assignment.time_period = %s
             )
         """
-        portal_db.execute(query, (collector_id, period,))
+        portal_db.execute(query, (collector_id, period, collector_id, period,))
         varieties = portal_db.fetchall()
 
         varieties = [ {
@@ -86,8 +94,27 @@ class CollectorVarietyModel(db.Model):
             'name': variety[1],
             'code': variety[2]
         } for variety in varieties ]
-
-
         
+        return varieties
 
+    @classmethod
+    def insert_many(cls, varieties):
+
+        find_product_id_query = "SELECT id FROM collector_product WHERE code = %s"
+
+        for variety in varieties:
+
+            portal_db.execute(find_product_id_query, (variety['code'],))
+            product_id = portal_db.fetchone()[0]
+
+            new_variety = cls(
+                variety['name'],
+                variety['code'],
+                product_id
+            )
+
+            db.session.add(new_variety)
+            db.session.commit()
+            variety['id'] = new_variety.id           
+        
         return varieties

@@ -1,4 +1,6 @@
-from db import db, portal_db
+from datetime import datetime
+from db import db, portal_db, portal_db_connection
+from models.collector_assignment import AssignmentModel
 
 class CollectorOutletModel(db.Model):
 
@@ -98,37 +100,52 @@ class CollectorOutletModel(db.Model):
         return new_outlet
     
     @classmethod
-    def find_by_collector(cls, collector_id):
-
-        query = """
-            SELECT DISTINCT 
-                collector_outlet.cpi_outlet_id, 
-                est_name, 
-                note, 
-                address, 
-                lat, 
-                collector_outlet.long, 
-                phone, 
-                area_id
-            FROM collector_outlet 
-            JOIN assignment ON collector_outlet.cpi_outlet_id = assignment.outlet_id
-            WHERE assignment.collector_id = %s
-            AND collector_outlet.cpi_outlet_id IS NOT NULL
-        """
-        portal_db.execute(query, (collector_id, ))
-        outlets = portal_db.fetchall()
-
-        outlets = [ {
-            'id': outlet[0],
-            'est_name': outlet[1],
-            'note': outlet[2],
-            'address': outlet[3],
-            'lat': outlet[4],
-            'long': outlet[5],
-            'phone': outlet[6],
-            'area_id': outlet[7]
-        } for outlet in outlets ]
+    def find_by_area(cls, area_id):
+        return cls.query.filter_by(area_id=area_id).all()
         
 
+    @classmethod
+    def insert_many(cls, outlets):
+
+        for outlet in outlets:
+
+            new_outlet = cls(
+                outlet['est_name'],
+                outlet['address'],
+                outlet['phone'],
+                outlet['area_id'],
+                outlet['lat'] if outlet['lat'] else 0,
+                outlet['long'] if outlet['long'] else 0,
+                outlet['note']
+            )
+            db.session.add(new_outlet)
+            db.session.commit()
+            outlet['id'] = new_outlet.id           
+        
         return outlets
 
+    @classmethod
+    def update_many(cls, outlets):
+
+        for outlet in outlets:
+
+            new_outlet = cls.find_by_id(outlet['mobile_id'])
+
+            new_outlet.est_name = outlet['est_name'],
+            new_outlet.address = outlet['address'],
+            new_outlet.phone = outlet['phone'],
+            new_outlet.area_id = outlet['area_id'],
+            new_outlet.lat = outlet['lat'] if outlet['lat'] else 0,
+            new_outlet.long = outlet['long'] if outlet['long'] else 0,
+            new_outlet.note = outlet['note']
+            
+            db.session.commit()
+        
+        return outlets
+            
+
+
+        
+
+       
+       
