@@ -6,18 +6,19 @@ from marshmallow import ValidationError
 from models.collector_assignment import AssignmentModel
 from validators.assignment import AssignmentSchema
 from validators.errors import ServerError
+from flask_jwt_extended import jwt_required
 
 assignmentSchema = AssignmentSchema()
 
 class AssignmentList(Resource):
-
+    @jwt_required()
     def get(self):
         try: 
             
             return [ assignment.json() for assignment in AssignmentModel.find_all() ]
         except Exception as e:
             raise ServerError()
-
+    @jwt_required()
     def put(self):
         # loads the raw data from the body
         raw_data = request.get_json()
@@ -42,21 +43,26 @@ class AssignmentList(Resource):
 
 
 class Assignment(Resource):
+
+    @jwt_required()
     def get(self, id):
         assignment = AssignmentModel.find_by_id(id)
         if assignment:
             return assignment.json()
         return {'message': 'Assignment not found'}, 404
 
+    @jwt_required()
     def put(self, id):
         return {'assignment': 'CPI Collector'}
 
+    @jwt_required()
     def delete(self, id):
         return {'assignment': 'CPI Collector'}
 
 
 class AssignmentLoader(Resource):
     
+    @jwt_required()
     def get(self):
         loaded_assignments = AssignmentModel.load_period_assignment()
         if len(loaded_assignments) >= 0:
@@ -64,4 +70,3 @@ class AssignmentLoader(Resource):
         return {'message': 'Assignment Failed to loaded'}
 
 
-    

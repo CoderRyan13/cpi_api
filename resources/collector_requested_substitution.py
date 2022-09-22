@@ -2,12 +2,15 @@ from flask_restful import Resource, request
 from marshmallow import INCLUDE, ValidationError
 from models.collector_requested_substitution import RequestedSubstitutionModel
 from validators.errors import NotFoundError, ServerError, Validation_Error
-from validators.requested_substitution import RequestSubstitutionSchema
+from validators.requested_substitution import RequestSubstitutionSchema, RequestedSubstitutionApprovalSchema
+from flask_jwt_extended import  get_jwt_identity, jwt_required
 
 requestedSubstitutionSchema = RequestSubstitutionSchema()
+requestedSubstitutionApprovalSchema = RequestedSubstitutionApprovalSchema()
 
 class CollectorRequestSubstitution(Resource):
 
+    @jwt_required()
     def get(self):
         
         try:
@@ -17,6 +20,7 @@ class CollectorRequestSubstitution(Resource):
             print(err)
             raise ServerError()
 
+    @jwt_required()
     def post(self):
 
         try:
@@ -43,6 +47,52 @@ class CollectorRequestSubstitution(Resource):
                     requested_substitutions_created.append(requested_assignment)
                 
             return [item.json() for item in requested_substitutions_created], 201
+
+        except ValidationError as err:
+            raise Validation_Error(err)
+        except Exception as err:
+            print(err)
+            raise ServerError()
+
+
+
+    @jwt_required()
+    
+    def put(self):
+
+        try:
+
+            user_id = get_jwt_identity()
+
+            assignments = request.get_json(silent=True)
+
+            if not isinstance(assignments, list):
+                raise ValidationError(["Missing assignments Data!"])
+
+            assignments = [ requestedSubstitutionApprovalSchema.load(assignment,unknown=INCLUDE) for assignment in assignments ]
+
+            print("Uploading price assignments...")
+            print(assignments)
+
+
+            # Used to save the assignments that have been updated ONLY
+            changedAssignments = []
+
+            # Loop through the assignments
+            for item in assignments:
+
+                #verify if there is a request with this assignment id for current period
+                requested_substitution = RequestedSubstitutionModel.find_by_assignment_id(item["assignment_id"])
+            
+                # if there is a request with this assignment id for current period, update the request
+                if requested_substitution and requested_substitution.status != "approved":
+
+                    requested_substitution.update_status(item['status'])
+                    changedAssignments.append(requested_substitution.json())
+
+
+            return changedAssignments, 200
+            
 
         except ValidationError as err:
             print(err)

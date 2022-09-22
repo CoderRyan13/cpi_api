@@ -1,7 +1,7 @@
 from datetime import datetime
 from flask_jwt_extended import current_user
 from flask_restful import Resource
-from db import cpi_db, portal_db_connection, portal_db
+from db import get_cpi_db_connection, get_portal_db_connection
 
 
 
@@ -24,7 +24,14 @@ class AssignmentsRawDataLoader(Resource):
     def get(self):
 
         try:
-        
+
+            portal_db = get_portal_db_connection()
+            portal_db_cursor = portal_db.cursor()
+
+            cpi_db = get_cpi_db_connection()
+            cpi_db_cursor = cpi_db.cursor()
+
+
             #get cpi assignments
             query = """ SELECT 
                 outlet_product_variety_id, 
@@ -38,8 +45,9 @@ class AssignmentsRawDataLoader(Resource):
                 collector_name,
                 last_collected
             FROM Assignment_View """
-            cpi_db.execute(query)
-            cpi_assignments = cpi_db.fetchall()
+
+            cpi_db_cursor.execute(query)
+            cpi_assignments = cpi_db_cursor.fetchall()
 
             print("CPI ASSIGNMENTS: ", len(cpi_assignments))
 
@@ -50,29 +58,28 @@ class AssignmentsRawDataLoader(Resource):
                 
                 #check if the assignment already exist
                 find_query = """SELECT id FROM assignment
-                                WHERE outlet_product_variety_id = %s 
-                                AND time_period = %s 
+                                WHERE outlet_id = %s 
+                                AND variety_id = %s 
                                 AND collector_id = %s """
-                
-                current_time_period = datetime.today().strftime('%Y-%m-01')
 
-                portal_assignment = portal_db.execute(find_query, (assignment[0], current_time_period, assignment[7] ))
-                portal_assignment= portal_db.fetchone()
+
+                # current_time_period = datetime.today().strftime('%Y-%m-01')
+
+                portal_assignment = portal_db_cursor.execute(find_query, (assignment[2], assignment[3], assignment[7] ))
+                portal_assignment= portal_db_cursor.fetchone()
         
                 #group items by existence
                 if portal_assignment is None:
 
-                    print(type(assignment[9]), type(current_time_period))
-
                     # find the portal outlet and  variety to use that id
                     outlet_query = """SELECT id FROM collector_outlet WHERE cpi_outlet_id = %s """
-                    portal_db.execute(outlet_query, (assignment[2], ))
-                    outlet_id = portal_db.fetchone()
+                    portal_db_cursor.execute(outlet_query, (assignment[2], ))
+                    outlet_id = portal_db_cursor.fetchone()
                     outlet_id = outlet_id[0] if outlet_id is not None else None
 
                     variety_query = """SELECT id FROM collector_variety WHERE cpi_variety_id = %s """
-                    portal_db.execute(variety_query, (assignment[3], ))
-                    variety_id = portal_db.fetchone()
+                    portal_db_cursor.execute(variety_query, (assignment[3], ))
+                    variety_id = portal_db_cursor.fetchone()
                     variety_id = variety_id[0] if variety_id is not None else None
 
 
@@ -83,68 +90,36 @@ class AssignmentsRawDataLoader(Resource):
 
                     new_assignments.append((
                         assignment[0], 
-                        assignment[1], 
                         outlet_id, 
                         variety_id, 
-                        assignment[4], 
-                        assignment[5], 
-                        assignment[6], 
                         assignment[7], 
-                        assignment[8], 
-                        assignment[9],
-                        can_substitute_assignment(assignment[9], current_time_period),
-                        current_time_period,
-                        None,
-                        None,
-                        datetime.now(),
-                        None,
-                        'inactive'
+                        "active"
                     ))
 
 
             create_query = """INSERT INTO assignment(
                         outlet_product_variety_id, 
-                        outlet_name, 
                         outlet_id,
                         variety_id,
-                        variety_name, 
-                        previous_price, 
-                        code, 
                         collector_id, 
-                        collector_name,
-                        last_collected,
-                        can_substitute,
-                        time_period, 
-                        approved_by, 
-                        date_approved,  
-                        create_date_time, 
-                        update_date_time,
-                        status
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                        status,
+                        create_date_time
+                    ) VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)"""
               
-            portal_db.executemany(create_query, new_assignments)
+            portal_db_cursor.executemany(create_query, new_assignments)
 
-            portal_db_connection.commit()  
+            portal_db.commit()  
 
             new_assignments = [ { 
                 "outlet_product_variety_id":assignment[0],
-                "outlet_name":assignment[1],
-                "outlet_id":assignment[2],
-                "variety_id":assignment[3],
-                "variety_name":assignment[4],
-                "previous_price": assignment[5],
-                "code":assignment[6],
-                "collector_id":assignment[7],
-                "collector_name":assignment[8],
-                "last_collected": str(assignment[9]),
-                "can_substitute": assignment[10],
-                "time_period": str(assignment[11]),
-                "approved_by": assignment[12],
-                "date_approved": assignment[13],
-                "create_date_time": str(assignment[14]),
-                "update_date_time": assignment[15],
-                "status":assignment[16]
+                "outlet_id":assignment[1],
+                "variety_id":assignment[2],
+                "collector_id":assignment[3],
+                "status":assignment[4],
             } for assignment in new_assignments]
+
+            portal_db.close()
+            cpi_db.close()
 
             return { "total": len(new_assignments), "new_assignments": new_assignments }
 

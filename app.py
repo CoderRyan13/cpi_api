@@ -1,20 +1,21 @@
+from datetime import timedelta
 from flask import Flask
 from flask_restful import Api
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
 from data_loaders.areas import AreasRawDataLoader
-from data_loaders.configure_automated_assignments import ConfigureAutomatedAssignments
-from data_loaders.configure_portal_varieties import ConfigurePortalVarieties
+from data_loaders.configure_assignments import ConfigureAssignments
 from data_loaders.outlets import OutletsRawDataLoader
 from data_loaders.upload_excel import UploadExcel
 from data_loaders.varieties import VarietiesRawDataLoader
 from db import db
 from resources.collector import Collectors
 from resources.collector_area import CollectorArea, CollectorAreaList
-from resources.collector_assignment import ActivateAssignments, CollectorAssignment, CollectorAssignmentList, CollectorAssignmentListByCollector, UploadAssignmentsPrices
-from resources.collector_outlet import CollectorOutlet, CollectorOutletList, CollectorOutletListByCollector
+from resources.collector_assignment import ActivateAssignments, CollectorAssignment, CollectorAssignmentList, CollectorAssignmentListByCollector, CollectorAutomatedAssignmentList, CollectorHeadquarterAssignmentList, UploadAssignmentsPrices
+from resources.collector_outlet import CollectorOutlet, CollectorOutletByArea, CollectorOutletList, CollectorOutletListByCollector
+from resources.collector_prices import CollectorAssignmentPrice
 from resources.collector_requested_substitution import CollectorRequestSubstitution
-from resources.collector_variety import CollectorVariety, CollectorVarietyList, CollectorVarietyListByCollector
+from resources.collector_variety import CollectorVariety, CollectorVarietyList, CollectorVarietyListByCollector, CollectorVarietyListByProductId
 from resources.collector_product import CollectorProduct, CollectorProductList
 
 # from resources.outlet import Outlet, OutletList
@@ -24,7 +25,7 @@ from werkzeug.exceptions import HTTPException
 from flask_cors import CORS
 
 from resources.time_period import TimePeriods
-from resources.collector_user import ChangePassword, Login
+from resources.collector_user import ChangePassword, Login, User, VerifyToken
 from data_loaders.products import ProductsRawDataLoader
 from data_loaders.assignments import AssignmentsRawDataLoader
 
@@ -35,6 +36,9 @@ api = Api(app)
 bcrypt = Bcrypt(app)
 
 app.config["JWT_SECRET_KEY"] = "super-secret" 
+app.config['JWT_TOKEN_LOCATION'] = ['headers']
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=20)
+
 jwt = JWTManager(app)
 
 
@@ -68,22 +72,30 @@ api.add_resource(CollectorRequestSubstitution, '/request-substitutions')
 
 
 # ---------------------- PORTAL ASSIGNMENTS ENDPOINTS --------------------
+
 api.add_resource( CollectorAssignment, '/assignments/<string:id>')
-api.add_resource( CollectorAssignmentList , '/assignments')
-api.add_resource( ActivateAssignments, '/activate-assignments/<string:status>')
+# api.add_resource( CollectorAssignmentList , '/assignments')
+
+api.add_resource( CollectorAutomatedAssignmentList, '/assignments/automated-assignments') 
+api.add_resource( CollectorHeadquarterAssignmentList, '/assignments/headquarter-assignments') 
+
 api.add_resource( CollectorAssignmentListByCollector, '/assignments/user-assignments/<string:collector_id>') 
 api.add_resource( UploadAssignmentsPrices , '/assignments-upload')
 
+
+# ---------------------- PORTAL ASSIGNMENT PRICES ENDPOINTS --------------------
+api.add_resource( CollectorAssignmentPrice, '/assignment-prices' )
 
 # ---------------------- PORTAL VARIETIES ENDPOINTS --------------------
 api.add_resource( CollectorVariety, '/varieties/<string:id>')
 api.add_resource( CollectorVarietyList, '/varieties')
 api.add_resource( CollectorVarietyListByCollector, '/varieties/user-varieties/<int:collector_id>') 
-
+api.add_resource( CollectorVarietyListByProductId, '/varieties/product-varieties/<int:product_id>')
 
 # ---------------------- PORTAL OUTLETS ENDPOINTS --------------------
-api.add_resource( CollectorOutletList, '/outlets') 
-api.add_resource( CollectorOutlet, '/outlets/<string:id>') 
+api.add_resource( CollectorOutletList, '/outlets' ) 
+api.add_resource( CollectorOutlet, '/outlets/<string:id>' ) 
+api.add_resource( CollectorOutletByArea, '/outlets/area-outlets/<int:area_id>' ) 
 api.add_resource( CollectorOutletListByCollector, '/outlets/user-outlets/<int:collector_id>') 
 
 
@@ -104,8 +116,9 @@ api.add_resource( TimePeriods, '/time_periods')
 
 # ---------------------- AUTHENTICATION ----------------------
 api.add_resource( Login, '/login')
+api.add_resource( VerifyToken, '/verify-token/<string:type>')
 api.add_resource( ChangePassword, '/change-password/<int:id>')
-
+api.add_resource( User, '/user')
 
 # ---------------------- DATA LOADERS FROM SIMA ----------------------
 api.add_resource( ProductsRawDataLoader, "/products-dataloader" )
@@ -117,8 +130,9 @@ api.add_resource( AreasRawDataLoader, '/areas-dataloader' )
 
 # ---------------------- PORTAL DATA CONFIGURATION --------------------
 api.add_resource( UploadExcel, '/read-excel')
-api.add_resource( ConfigurePortalVarieties, '/configure-portal-varieties/<string:filename>' )
-api.add_resource( ConfigureAutomatedAssignments, '/configure-automated-assignments/<string:filename>' )
+# api.add_resource( ConfigurePortalVarieties, '/configure-portal-varieties/<string:filename>' )
+# api.add_resource( ConfigureAutomatedAssignments, '/configure-automated-assignments/<string:filename>' )
+api.add_resource( ConfigureAssignments, '/configure-assignments/<string:filename>' )
 
 
 #RUNS THE API

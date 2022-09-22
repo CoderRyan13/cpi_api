@@ -24,7 +24,7 @@ def validate_code(val):
         raise ValidationError('Product not found')
 
 class NewVarietySchema(Schema):
-    mobile_id = fields.Integer( validate=validate.Range(min=1), required=True, error_messages={"required": "mobile_id is required."})
+    mobile_id = fields.Integer( validate=validate.Range(min=1), required=False)
     code =  fields.String( validate=[validate_code], required=True, error_messages={"required": "code is required."})
     name=  fields.String( required=True, error_messages={"required": "name is required."})
    

@@ -1,5 +1,5 @@
 from flask_restful import Resource
-from db import cpi_db, portal_db_connection, portal_db
+from db import get_cpi_db_connection, get_portal_db_connection
 
 class ProductsRawDataLoader(Resource):
     
@@ -7,9 +7,15 @@ class ProductsRawDataLoader(Resource):
 
         try:
         
+            cpi_db = get_cpi_db_connection()
+            cpi_db_cursor = cpi_db.cursor()
+
+            portal_db = get_portal_db_connection()
+            portal_db_cursor = portal_db.cursor()
+
             #get cpi products
-            cpi_db.execute("SELECT id, code, status, description, create_date_time, update_date_time FROM coicop")
-            cpi_products = cpi_db.fetchall()
+            cpi_db_cursor.execute("SELECT id, code, status, description, create_date_time, update_date_time FROM coicop")
+            cpi_products = cpi_db_cursor.fetchall()
 
             #results
             synced_products = {
@@ -26,8 +32,8 @@ class ProductsRawDataLoader(Resource):
                 
                 #check if the product already exist
                 find_query = "SELECT id FROM collector_product WHERE id = %s"
-                portal_product = portal_db.execute(find_query, (product[0],))
-                portal_product= portal_db.fetchone()
+                portal_product = portal_db_cursor.execute(find_query, (product[0],))
+                portal_product= portal_db_cursor.fetchone()
 
                 #group items by existence
                 if portal_product is None:
@@ -43,8 +49,8 @@ class ProductsRawDataLoader(Resource):
             create_query = """ INSERT INTO collector_product(id, code,  status, description, created_at, updated_at)
                         VALUES(%s, %s, %s, %s, %s, %s)
                     """
-            portal_db.executemany(create_query, new_products)
-            portal_db_connection.commit()
+            portal_db_cursor.executemany(create_query, new_products)
+            portal_db.commit()
 
             #update the existing products
             update_query = """ UPDATE collector_product SET 
@@ -55,8 +61,8 @@ class ProductsRawDataLoader(Resource):
                                 updated_at = %s
                                 WHERE id = %s"""
 
-            portal_db.executemany(update_query, updated_products)
-            portal_db_connection.commit()
+            portal_db_cursor.executemany(update_query, updated_products)
+            portal_db.commit()
             
             synced_products['new_products'] = [{ 
                 'id': product[0], 
@@ -75,6 +81,9 @@ class ProductsRawDataLoader(Resource):
                 'created_at': str(product[3]),
                 'updated_at': str(product[4]) if product[4] else None
             } for product in updated_products]
+
+            cpi_db.close()
+            portal_db.close()
 
             return synced_products
         

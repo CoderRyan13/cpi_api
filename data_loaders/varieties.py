@@ -1,6 +1,6 @@
 from datetime import datetime
 from flask_restful import Resource
-from db import cpi_db, portal_db_connection, portal_db
+from db import get_portal_db_connection,  get_cpi_db_connection 
 
 class VarietiesRawDataLoader(Resource):
     
@@ -8,9 +8,15 @@ class VarietiesRawDataLoader(Resource):
 
         try:
         
+            cpi_db = get_cpi_db_connection()
+            cpi_db_cursor = cpi_db.cursor()
+
+            portal_db = get_portal_db_connection()
+            portal_db_cursor = portal_db.cursor()
+
             #get cpi varieties
-            cpi_db.execute("SELECT id, code, name, product_id FROM variety")
-            cpi_varieties = cpi_db.fetchall()
+            cpi_db_cursor.execute("SELECT id, code, name, product_id FROM variety")
+            cpi_varieties = cpi_db_cursor.fetchall()
 
             #results
             synced_varieties = {
@@ -27,8 +33,8 @@ class VarietiesRawDataLoader(Resource):
                 
                 #check if the variety already exist
                 find_query = "SELECT cpi_variety_id FROM collector_variety WHERE cpi_variety_id = %s"
-                portal_variety = portal_db.execute(find_query, (variety[0],))
-                portal_variety= portal_db.fetchone()
+                portal_variety = portal_db_cursor.execute(find_query, (variety[0],))
+                portal_variety= portal_db_cursor.fetchone()
 
                 #group items by existence
                 if portal_variety is None:
@@ -44,8 +50,8 @@ class VarietiesRawDataLoader(Resource):
             create_query = """ INSERT INTO collector_variety(cpi_variety_id, code, name, product_id, approved_by, date_approved)
                         VALUES(%s, %s, %s, %s, %s, %s)
                     """
-            portal_db.executemany(create_query, new_varieties)
-            portal_db_connection.commit()
+            portal_db_cursor.executemany(create_query, new_varieties)
+            portal_db.commit()
 
             #update the existing varieties
             update_query = """ UPDATE collector_variety SET 
@@ -54,8 +60,8 @@ class VarietiesRawDataLoader(Resource):
                                 product_id = %s, 
                                 WHERE cpi_variety_id = %s"""
 
-            portal_db.executemany(update_query, updated_varieties)
-            portal_db_connection.commit()
+            portal_db_cursor.executemany(update_query, updated_varieties)
+            portal_db.commit()
             
             synced_varieties['new_varieties'] = [{ 
                 'id': variety[0], 
@@ -70,6 +76,9 @@ class VarietiesRawDataLoader(Resource):
                 'name': variety[1], 
                 'product_id': variety[2],
             } for variety in updated_varieties]
+
+            cpi_db.close()
+            portal_db.close()
 
             return synced_varieties
         

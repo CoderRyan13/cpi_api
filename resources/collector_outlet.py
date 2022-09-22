@@ -7,6 +7,8 @@ from models.collector_outlet import CollectorOutletModel
 from models.collector_user import CollectorUserModel
 from validators.errors import NotFoundError, ServerError
 from validators.outlet import NewOutletSchema, OutletSchema, UpdateOutletSchema
+from flask_jwt_extended import jwt_required
+
 
 outletSchema = OutletSchema()
 newOutletSchema = NewOutletSchema()
@@ -14,6 +16,7 @@ updateOutletSchema = UpdateOutletSchema()
 
 class CollectorOutlet(Resource):
 
+    @jwt_required()
     def get(self, id):
         outlet = CollectorOutletModel.find_by_id(id)
         print("Outlet:", outlet)
@@ -21,6 +24,7 @@ class CollectorOutlet(Resource):
             return outlet.json()
         return {'message': 'Outlet not found'}, 404
 
+    @jwt_required()
     def put(self, id):
         old_outlet = CollectorOutletModel.find_by_id(id)
         
@@ -38,6 +42,7 @@ class CollectorOutlet(Resource):
         old_outlet.update(outlet)
         return old_outlet.json(), 201
 
+    @jwt_required()
     def delete(self, id):
         outlet = CollectorOutletModel.find_by_id(id)
         if not outlet:
@@ -48,9 +53,11 @@ class CollectorOutlet(Resource):
     
 
 class CollectorOutletList(Resource):
+    @jwt_required()
     def get(self):
         return [ outlet.json() for outlet in CollectorOutletModel.find_all() ]
 
+    @jwt_required()
     def post(self):
         # get the list of outlets expected to be created
         
@@ -71,6 +78,7 @@ class CollectorOutletList(Resource):
             raise ServerError()
 
 
+    @jwt_required()
     def put(self): 
         try:
             raw_data = request.get_json()
@@ -90,6 +98,7 @@ class CollectorOutletList(Resource):
 
        
 class CollectorOutletListByCollector(Resource):
+    @jwt_required()
     def get(self, collector_id):
         user = CollectorUserModel.find_by_id(collector_id)
         if not user or not user.area_id:
@@ -99,3 +108,8 @@ class CollectorOutletListByCollector(Resource):
         return [outlet.json() for outlet in outlets]
 
    
+class CollectorOutletByArea(Resource):
+    @jwt_required()
+    def get(self, area_id):
+        outlets = CollectorOutletModel.find_by_area(area_id)
+        return [outlet.json() for outlet in outlets]

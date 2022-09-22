@@ -4,16 +4,20 @@ from models.collector_area import CollectorAreaModel
 
 from validators.area import AreaSchema
 from validators.errors import NotFoundError
+from flask_jwt_extended import jwt_required
 
 areaSchema = AreaSchema()
 
 class CollectorArea(Resource):
+
+    @jwt_required()
     def get(self, id):
         area = CollectorAreaModel.find_by_id(id)
         if area:
             return area.json()
         raise NotFoundError("Area") 
 
+    @jwt_required()
     def put(self, id):
         area = CollectorAreaModel.find_by_id(id)
         if not area:
@@ -28,6 +32,7 @@ class CollectorArea(Resource):
         area.update(new_area)
         return area.json()
 
+    @jwt_required()
     def delete(self, id): 
         area = CollectorAreaModel.find_by_id(id)
         if not area:
@@ -36,9 +41,12 @@ class CollectorArea(Resource):
         return {'message': 'Area deleted'}
 
 class CollectorAreaList(Resource):
+
+    @jwt_required()
     def get(self):
         return  [area.json() for area in CollectorAreaModel.find_all()]
 
+    @jwt_required()
     def post(self):
         raw_data = request.get_json()
         try:

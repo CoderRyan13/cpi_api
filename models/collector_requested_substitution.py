@@ -7,12 +7,14 @@ class RequestedSubstitutionModel(db.Model):
     __tablename__ = 'requested_substitution'
     id = db.Column(db.Integer, primary_key=True)
     assignment_id = db.Column(db.Integer, db.ForeignKey('assignment.id'), nullable=False, unique=True)
+    time_period = db.Column(db.Date, nullable=False)
     status = db.Column(db.Enum('pending', 'approved', 'rejected'), nullable=False)
     requested_at = db.Column(db.DateTime, db.ForeignKey('collector_outlet.id'), nullable=False)
     updated_at = db.Column(db.DateTime, nullable=True)
 
     
     def __init__(self, assignment_id):
+        self.time_period = datetime.today().strftime('%Y-%m-01')
         self.assignment_id = assignment_id
         self.requested_at = datetime.now()
         self.status = "pending"
@@ -37,7 +39,8 @@ class RequestedSubstitutionModel(db.Model):
     
     @classmethod
     def find_by_assignment_id(cls, assignment_id):
-        return cls.query.filter_by(assignment_id=assignment_id).first()
+        time_period = datetime.today().strftime('%Y-%m-01')
+        return cls.query.filter_by(assignment_id=assignment_id, time_period=time_period).first()
     
     def save_to_db(self):
 
@@ -50,6 +53,11 @@ class RequestedSubstitutionModel(db.Model):
 
     def update_request_by_id(self, status):
         self.status = status
+        db.session.commit()
+
+    def update_status(self, status):
+        self.status = status
+        self.updated_at = datetime.now()
         db.session.commit()
 
 

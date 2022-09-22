@@ -1,5 +1,5 @@
 from datetime import datetime
-from db import db, portal_db, portal_db_connection
+from db import db
 from models.collector_assignment import AssignmentModel
 
 class CollectorOutletModel(db.Model):
@@ -16,7 +16,7 @@ class CollectorOutletModel(db.Model):
     phone = db.Column(db.Integer, nullable=True)
     area_id = db.Column(db.Integer, db.ForeignKey("collector_area.id"), nullable=False)
  
-    # area = db.relationship("CollectorAreaModel", back_populates="outlets")
+    area = db.relationship("CollectorAreaModel", backref="outlets")
 
     def __init__(self, est_name, address, phone, area_id, lat, _long, note, cpi_outlet_id=None, _id=None, ):
 

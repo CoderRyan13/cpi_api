@@ -4,14 +4,17 @@ from marshmallow import ValidationError
 from models.collector_variety import CollectorVarietyModel
 from validators.variety import VarietySchema
 from validators.errors import NotFoundError, ServerError
+from flask_jwt_extended import jwt_required
 
 varietySchema = VarietySchema()
 
 class VarietyList(Resource):
     
+    @jwt_required()
     def get(self):
         return [variety.json() for variety in CollectorVarietyModel.find_all()] 
 
+    @jwt_required()
     def post(self):
 
         try:
@@ -33,6 +36,7 @@ class VarietyList(Resource):
         
 class Variety(Resource):
 
+    @jwt_required()
     def get(self, id):
         variety = CollectorVarietyModel.find_by_id(id)
         if variety:

@@ -1,11 +1,17 @@
 from flask_restful import Resource
-from db import cpi_db, portal_db_connection, portal_db
+from db import get_cpi_db_connection, get_portal_db_connection
 
 class OutletsRawDataLoader(Resource):
     
     def get(self):
 
         try:
+
+            cpi_db = get_cpi_db_connection()
+            cpi_db_cursor = cpi_db.cursor()
+
+            portal_db = get_portal_db_connection()
+            portal_db_cursor = portal_db.cursor()
         
             #get cpi outlets
         
@@ -18,8 +24,8 @@ class OutletsRawDataLoader(Resource):
                             area_id 
                         FROM outlet """
         
-            cpi_db.execute(query)
-            cpi_outlets = cpi_db.fetchall()
+            cpi_db_cursor.execute(query)
+            cpi_outlets = cpi_db_cursor.fetchall()
 
             #results
             synced_outlets = {
@@ -35,8 +41,8 @@ class OutletsRawDataLoader(Resource):
                 
                 #check if the outlet already exist
                 find_query = "SELECT id FROM collector_outlet WHERE cpi_outlet_id = %s"
-                portal_outlet = portal_db.execute(find_query, (outlet[0],))
-                portal_outlet= portal_db.fetchone()
+                portal_outlet = portal_db_cursor.execute(find_query, (outlet[0],))
+                portal_outlet= portal_db_cursor.fetchone()
 
                 #group items by existence
                 if portal_outlet is None:
@@ -58,8 +64,8 @@ class OutletsRawDataLoader(Resource):
                                 area_id) 
                             VALUES(%s, %s, %s, %s, %s, %s)"""
 
-            portal_db.executemany(create_query, new_outlets)
-            portal_db_connection.commit()
+            portal_db_cursor.executemany(create_query, new_outlets)
+            portal_db.commit()
 
             #update the existing outlets
             update_query = """  UPDATE collector_outlet SET 
@@ -70,8 +76,8 @@ class OutletsRawDataLoader(Resource):
                                     area_id=%s 
                                 WHERE cpi_outlet_id=%s"""
 
-            portal_db.executemany(update_query, updated_outlets)
-            portal_db_connection.commit()
+            portal_db_cursor.executemany(update_query, updated_outlets)
+            portal_db.commit()
             
             synced_outlets['new_outlets'] = [{ 
                 "cpi_outlet_id" : outlet[0],
@@ -90,6 +96,9 @@ class OutletsRawDataLoader(Resource):
                 "phone" : outlet[3],
                 "area_id" : outlet[4]
             } for outlet in updated_outlets]
+
+            cpi_db.close()
+            portal_db.close()
 
             return synced_outlets
         

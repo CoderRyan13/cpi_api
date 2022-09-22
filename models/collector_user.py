@@ -8,7 +8,7 @@ class CollectorUserModel(db.Model):
     email = db.Column(db.String(255), nullable=False)
     username = db.Column(db.String(255), nullable=False)
     password = db.Column(db.Text, nullable=False)
-    area_id = db.Column(db.Integer, db.ForeignKey('collector_area.id'), nullable=False)
+    area_id = db.Column(db.Integer, db.ForeignKey('collector_area.id'), nullable=True)
     type = db.Column(db.Enum('collector', 'HQ'), nullable=False)
 
     def __init__(self, name, email, username, password, area_id, type):
@@ -28,7 +28,7 @@ class CollectorUserModel(db.Model):
             'name': self.name,
             'email': self.email,
             'username': self.username,
-            'password': self.password,
+            'password': None,
             'area_id': self.area_id,
             'type': self.type
         }
@@ -36,6 +36,10 @@ class CollectorUserModel(db.Model):
     @classmethod
     def find_by_username(cls, username):
         return cls.query.filter_by(username=username).first()
+    
+    @classmethod
+    def find_by_email(cls, email):
+        return cls.query.filter_by(email=email).first()
 
     @classmethod
     def find_by_id(cls, _id):
@@ -49,4 +53,10 @@ class CollectorUserModel(db.Model):
         self.password = new_password
         db.session.commit()
 
-    
+    def update(self, user_data):
+        self.name = user_data['name']
+        self.username = user_data['username']
+        self.email = user_data['email']
+        self.type = user_data['type']
+        self.area_id = user_data['area_id'] if user_data['type'] == 'collector' else None
+        db.session.commit()
