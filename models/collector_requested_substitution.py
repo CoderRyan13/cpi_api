@@ -1,6 +1,7 @@
 
 from datetime import datetime
 from db import db
+from models.settings import SettingsModel
 
 class RequestedSubstitutionModel(db.Model):
 
@@ -14,7 +15,7 @@ class RequestedSubstitutionModel(db.Model):
 
     
     def __init__(self, assignment_id):
-        self.time_period = datetime.today().strftime('%Y-%m-01')
+        self.time_period = SettingsModel.get_current_time_period()
         self.assignment_id = assignment_id
         self.requested_at = datetime.now()
         self.status = "pending"
@@ -39,7 +40,7 @@ class RequestedSubstitutionModel(db.Model):
     
     @classmethod
     def find_by_assignment_id(cls, assignment_id):
-        time_period = datetime.today().strftime('%Y-%m-01')
+        time_period = SettingsModel.get_current_time_period()
         return cls.query.filter_by(assignment_id=assignment_id, time_period=time_period).first()
     
     def save_to_db(self):

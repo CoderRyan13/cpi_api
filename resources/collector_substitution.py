@@ -7,6 +7,8 @@ from models.collector_assignment import AssignmentModel
 from models.collector_price import CollectorPriceModel
 
 from models.collector_substitution import SubstitutionModel
+from models.settings import SettingsModel, can_access_assignments
+from validators.errors import ServerError
 from validators.substitution import SubstitutionSchema
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
@@ -17,9 +19,10 @@ class SubstitutionList(Resource):
 
     @jwt_required()
     def get(self):
-        return [ substitution.json() for substitution in SubstitutionModel.find_all() ]
+        return []
 
     @jwt_required()
+    @can_access_assignments
     def post(self):
 
         # validates the data

@@ -1,6 +1,7 @@
 from flask_restful import Resource, request
 from marshmallow import INCLUDE, ValidationError
 from models.collector_requested_substitution import RequestedSubstitutionModel
+from models.settings import can_access_assignments
 from validators.errors import NotFoundError, ServerError, Validation_Error
 from validators.requested_substitution import RequestSubstitutionSchema, RequestedSubstitutionApprovalSchema
 from flask_jwt_extended import  get_jwt_identity, jwt_required
@@ -11,6 +12,7 @@ requestedSubstitutionApprovalSchema = RequestedSubstitutionApprovalSchema()
 class CollectorRequestSubstitution(Resource):
 
     @jwt_required()
+    @can_access_assignments
     def get(self):
         
         try:
@@ -21,6 +23,7 @@ class CollectorRequestSubstitution(Resource):
             raise ServerError()
 
     @jwt_required()
+    @can_access_assignments
     def post(self):
 
         try:
@@ -57,7 +60,7 @@ class CollectorRequestSubstitution(Resource):
 
 
     @jwt_required()
-    
+    @can_access_assignments
     def put(self):
 
         try:

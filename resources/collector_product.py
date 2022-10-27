@@ -16,7 +16,7 @@ class CollectorProductList(Resource):
         args = request.args.to_dict()
 
         #get the products from the database
-        return [product.json() for product in CollectorProductModel.find_all(args)]
+        return [product.api_json() for product in CollectorProductModel.find_all(args)]
 
     @jwt_required()
     def post(self):

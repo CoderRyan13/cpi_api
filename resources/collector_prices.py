@@ -3,10 +3,11 @@ from marshmallow import INCLUDE, ValidationError
 from models.collector_assignment import AssignmentModel
 from models.collector_price import CollectorPriceModel
 from validators.errors import ServerError, Validation_Error
-from validators.prices import AssignmentPriceApprovalSchema
+from validators.prices import AssignmentExportSchema, AssignmentPriceApprovalSchema
 from flask_jwt_extended import  get_jwt_identity, jwt_required
 
 assignmentPriceApprovalSchema = AssignmentPriceApprovalSchema()
+assignmentExportSchema = AssignmentExportSchema()
 
 #  Used to approve or reject a price for an Assignment
 class CollectorAssignmentPrice(Resource):
@@ -64,6 +65,35 @@ class CollectorAssignmentPrice(Resource):
         except ValidationError as err:
             print(err)
             raise Validation_Error()
+        except Exception as err:
+            print(err)
+            raise ServerError()
+
+
+class ExportAssignmentCollection(Resource):
+
+    def get(self):
+       
+
+        try:
+            # get the query strings
+            query = request.args
+
+            # load the query strings using the schema
+            query = assignmentExportSchema.load(query) 
+
+            time_period = query.get("time_period", None)
+            area_id = query.get("area_id", None)
+
+            # get the assignment prices for the time period and area_id
+            prices = CollectorPriceModel.get_price_collection(time_period, area_id)
+
+            # return send_file(r'C:\Users\spalma\Documents\SIB\CPI\cpi_api\imports\2022-08-25-14-42-54-assignment-IDS_From_SIMA-CSV_MP.csv', mimetype='text/csv', attachment_filename='assignment-IDS_From_SIMA-CSV_MP.csv', as_attachment=True)
+        
+        except ValidationError as err:
+            print(err)
+            raise Validation_Error()
+
         except Exception as err:
             print(err)
             raise ServerError()

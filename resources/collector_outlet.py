@@ -5,6 +5,7 @@ from marshmallow import ValidationError
 
 from models.collector_outlet import CollectorOutletModel
 from models.collector_user import CollectorUserModel
+from models.settings import can_access_assignments
 from validators.errors import NotFoundError, ServerError
 from validators.outlet import NewOutletSchema, OutletSchema, UpdateOutletSchema
 from flask_jwt_extended import jwt_required
@@ -99,6 +100,7 @@ class CollectorOutletList(Resource):
        
 class CollectorOutletListByCollector(Resource):
     @jwt_required()
+    @can_access_assignments
     def get(self, collector_id):
         user = CollectorUserModel.find_by_id(collector_id)
         if not user or not user.area_id:

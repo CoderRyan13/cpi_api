@@ -8,7 +8,7 @@ class Form:
         portal_db_cursor = portal_db.cursor()
 
         query = """
-            SELECT DISTINCT time_period FROM assignment ORDER BY time_period DESC
+            SELECT DISTINCT time_period FROM price ORDER BY time_period DESC
         """
         portal_db_cursor.execute(query)
         time_periods = portal_db_cursor.fetchall()

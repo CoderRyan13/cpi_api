@@ -18,7 +18,7 @@ class CollectorOutletModel(db.Model):
  
     area = db.relationship("CollectorAreaModel", backref="outlets")
 
-    def __init__(self, est_name, address, phone, area_id, lat, _long, note, cpi_outlet_id=None, _id=None, ):
+    def __init__(self, est_name, address, phone, area_id, lat, long, note, cpi_outlet_id=None, _id=None, ):
 
         self.id = _id
         self.cpi_outlet_id = cpi_outlet_id
@@ -27,7 +27,7 @@ class CollectorOutletModel(db.Model):
         self.phone = phone
         self.area_id = area_id
         self.lat = lat
-        self.long = _long
+        self.long = long
         self.note = note
         
 

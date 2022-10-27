@@ -7,7 +7,10 @@ from db import get_cpi_db_connection, get_portal_db_connection
 
 # This determines if the assignment can be substituted for the assignment time period
 def can_substitute_assignment(last_collected, time_period_str):
+
     time_period = datetime.strptime(time_period_str, "%Y-%m-%d")
+    
+    
     if last_collected is not None:
         l_year = last_collected.year
         l_month = last_collected.month

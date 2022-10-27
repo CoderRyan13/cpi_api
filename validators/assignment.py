@@ -1,5 +1,5 @@
 from datetime import datetime
-from marshmallow import Schema, fields, ValidationError, post_load, validate
+from marshmallow import Schema, fields, ValidationError, post_load, validate, validates_schema
 from models.collector_assignment import AssignmentModel
 from validators.substitution import SubstitutionSchema
 
@@ -17,22 +17,31 @@ def validate_time_period(val):
     
 
 class AssignmentSchema(Schema):
-    outlet_product_variety_id =  fields.Integer(validate=validate.Range(min=1), required=True, error_messages={"required": "outlet_product_variety_id is required."})
-    comment=  fields.Str( validate=validate_length, required=True, error_messages={"required": "comment is required."})
-    new_price=  fields.Decimal(required=True, error_messages={"required": "new_price is required."})
-    previous_price=  fields.Decimal(required=True, error_messages={"required": "previous_price is required."})
-    time_period=  fields.Date(required=True, error_messages={"required": "time_period is required."})
-    outlet_id=  fields.Integer(validate=validate.Range(min=1), required=True, error_messages={"required": "outlet_id is required."})
-    outlet_name=  fields.Str(validate=validate_length, required=True, error_messages={"required": "outlet_name is required."})
-    code=  fields.Str(validate=validate_length, required=True, error_messages={"required": "code is required."})
-    collector_id=  fields.Integer(validate=validate.Range(min=1), required=True, error_messages={"required": "collector_id is required."})
-    collector_name=  fields.Str(validate=validate_length, required=True, error_messages={"required": "collector_name is required."})
-    substitution= fields.Nested( SubstitutionSchema, required=False)
+    area_id =  fields.Integer(validate=validate.Range(min=1), required=True, error_messages={"required": "area_id is required."})
+    outlet_id =  fields.Integer(validate=validate.Range(min=1), required=True, error_messages={"required": "outlet_id is required."})
+    variety_id =  fields.Integer(validate=validate.Range(min=1), required=True, error_messages={"required": "variety_id is required."})
+    collector_id =  fields.Integer(validate=validate.Range(min=1), required=True, error_messages={"required": "collector_id is required."})
+    from_outlet_id =  fields.Integer(validate=validate.Range(min=1), required=False, allow_none=True)
+    is_headquarter =  fields.Boolean( required=True, error_messages={"required": "is_headquarter is required."})
+    is_monthly =  fields.Boolean( required=True, error_messages={"required": "is_monthly is required."})
+    
 
     @post_load
     def make_assignment(self, data, **kwargs):
         print(data)
         return AssignmentModel(**data)
+
+    @validates_schema()
+    def validate_assignment_schema(self, data, **kwargs):
+
+        # validate assignment_id for existence
+        existing_assignment = AssignmentModel.get_assignment_by_variety_outlet_collector(data['variety_id'], data['outlet_id'], data['collector_id'])
+
+        if existing_assignment:
+
+            # validate assignment_id for existence
+            if existing_assignment.status == 'active':
+                raise ValidationError({'message': f'Assignment Already Exists: {existing_assignment.id}'})
 
 
 class AssignmentIdentitySchema(Schema):

@@ -6,12 +6,13 @@ from flask_jwt_extended import JWTManager
 from data_loaders.areas import AreasRawDataLoader
 from data_loaders.configure_assignments import ConfigureAssignments
 from data_loaders.outlets import OutletsRawDataLoader
+from data_loaders.sync_automated_assignments import SyncAutomatedAssignments
 from data_loaders.upload_excel import UploadExcel
 from data_loaders.varieties import VarietiesRawDataLoader
 from db import db
 from resources.collector import Collectors
 from resources.collector_area import CollectorArea, CollectorAreaList
-from resources.collector_assignment import ActivateAssignments, CollectorAssignment, CollectorAssignmentList, CollectorAssignmentListByCollector, CollectorAutomatedAssignmentList, CollectorHeadquarterAssignmentList, UploadAssignmentsPrices
+from resources.collector_assignment import ActivateAssignments, CollectorAssignment, CollectorAssignmentList, CollectorAssignmentListByCollector, CollectorAssignmentStatistics, CollectorAssignmentSubstitutionsWithNewVariety, CollectorAutomatedAssignmentList, CollectorFilterAssignments, CollectorHeadquarterAssignmentList, CollectorOutletCoverageStats, UploadAssignmentsPrices
 from resources.collector_outlet import CollectorOutlet, CollectorOutletByArea, CollectorOutletList, CollectorOutletListByCollector
 from resources.collector_prices import CollectorAssignmentPrice
 from resources.collector_requested_substitution import CollectorRequestSubstitution
@@ -24,7 +25,7 @@ from resources.cpi_variety import CPIVariety, CPIVarietyList
 from werkzeug.exceptions import HTTPException
 from flask_cors import CORS
 
-from resources.time_period import TimePeriods
+from resources.time_period import CurrentTimePeriod, TimePeriods
 from resources.collector_user import ChangePassword, Login, User, VerifyToken
 from data_loaders.products import ProductsRawDataLoader
 from data_loaders.assignments import AssignmentsRawDataLoader
@@ -67,28 +68,62 @@ api.add_resource( CPIVarietyList, '/cpi-varieties')
 
 
 # ---------------------- PORTAL SUBSTITUTION ENDPOINTS --------------------
+
+# used by the collector and headquarter to upload substitutions
 api.add_resource( SubstitutionList , '/substitutions')
+
+
+# used by the collector to request and the headquarter to approve substitution requested 
 api.add_resource(CollectorRequestSubstitution, '/request-substitutions')
 
 
 # ---------------------- PORTAL ASSIGNMENTS ENDPOINTS --------------------
 
+# used by the headquarter to get an assignment by id
 api.add_resource( CollectorAssignment, '/assignments/<string:id>')
-# api.add_resource( CollectorAssignmentList , '/assignments')
 
+# used by headquarter to get all the assignments
+api.add_resource( CollectorAssignmentList , '/assignments')
+
+
+# used by headquarter to get current assignments data
+api.add_resource( CollectorFilterAssignments , '/current-assignments')
+
+# used by the headquarters to get the automated assignments
 api.add_resource( CollectorAutomatedAssignmentList, '/assignments/automated-assignments') 
+api.add_resource( SyncAutomatedAssignments , '/assignments/sync-automated-assignments')
+
+# used by the headquarter to get the assignments collected by the headquarter only
 api.add_resource( CollectorHeadquarterAssignmentList, '/assignments/headquarter-assignments') 
 
+# used by the collector to get the assignments by collector id 
 api.add_resource( CollectorAssignmentListByCollector, '/assignments/user-assignments/<string:collector_id>') 
+
+# used by the HQ to find all assignments substituted with a new variety
+api.add_resource( CollectorAssignmentSubstitutionsWithNewVariety, '/assignments/new-variety-substitution-assignments') 
+
+#used to get the stats for a dashboard 
+api.add_resource( CollectorAssignmentStatistics, '/assignments/collection-statistics')
+api.add_resource( CollectorOutletCoverageStats, '/assignments/outlet-coverage-statistics')
+
+# used by the collector to upload the prices of the assignments collected. Also used by the headquarter to update a price
 api.add_resource( UploadAssignmentsPrices , '/assignments-upload')
 
 
 # ---------------------- PORTAL ASSIGNMENT PRICES ENDPOINTS --------------------
+
+# used by the the headquarter to update the status of the assignments
 api.add_resource( CollectorAssignmentPrice, '/assignment-prices' )
+
+# api.add_resource( ExportAssignmentCollection, '/export-assignment-collection' )
+
 
 # ---------------------- PORTAL VARIETIES ENDPOINTS --------------------
 api.add_resource( CollectorVariety, '/varieties/<string:id>')
 api.add_resource( CollectorVarietyList, '/varieties')
+
+
+# used specifically by the collector to get the varieties based on the assignments to be collected
 api.add_resource( CollectorVarietyListByCollector, '/varieties/user-varieties/<int:collector_id>') 
 api.add_resource( CollectorVarietyListByProductId, '/varieties/product-varieties/<int:product_id>')
 
@@ -96,23 +131,24 @@ api.add_resource( CollectorVarietyListByProductId, '/varieties/product-varieties
 api.add_resource( CollectorOutletList, '/outlets' ) 
 api.add_resource( CollectorOutlet, '/outlets/<string:id>' ) 
 api.add_resource( CollectorOutletByArea, '/outlets/area-outlets/<int:area_id>' ) 
-api.add_resource( CollectorOutletListByCollector, '/outlets/user-outlets/<int:collector_id>') 
 
+
+# used specifically by the collector to get the outlets based on the assignments to be collected
+api.add_resource( CollectorOutletListByCollector, '/outlets/user-outlets/<int:collector_id>') 
 
 # ---------------------- PORTAL PRODUCTS ENDPOINTS --------------------------
 api.add_resource( CollectorProductList, '/products')
 api.add_resource( CollectorProduct, '/products/<string:id>')
 
-
-# ---------------------- PORTAl AREA ENDPOINTS
+# ---------------------- PORTAl AREA ENDPOINTS 
 api.add_resource( CollectorAreaList, '/areas') 
-api.add_resource( CollectorArea, '/areas/<string:id>') 
+api.add_resource( CollectorArea, '/areas/<string:id>')       
 
 
 # ---------------------- GENERAL FORM DATA GETTERS ----------------------
 api.add_resource( Collectors, '/collectors')
 api.add_resource( TimePeriods, '/time_periods')
-
+api.add_resource( CurrentTimePeriod, '/current-time-period')
 
 # ---------------------- AUTHENTICATION ----------------------
 api.add_resource( Login, '/login')
@@ -126,7 +162,6 @@ api.add_resource( VarietiesRawDataLoader, '/varieties-dataloader' )
 api.add_resource( AssignmentsRawDataLoader, '/assignments-dataloader' )
 api.add_resource( OutletsRawDataLoader, '/outlets-dataloader' )
 api.add_resource( AreasRawDataLoader, '/areas-dataloader' )
-
 
 # ---------------------- PORTAL DATA CONFIGURATION --------------------
 api.add_resource( UploadExcel, '/read-excel')

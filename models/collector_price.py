@@ -1,6 +1,7 @@
 from datetime import datetime
 from db import db
 from models.collector_variety import CollectorVarietyModel
+from models.settings import SettingsModel
 
 
 class CollectorPriceModel(db.Model):
@@ -27,7 +28,7 @@ class CollectorPriceModel(db.Model):
         collector_id
     ):
 
-        current_time_period = datetime.today().strftime('%Y-%m-01')
+        current_time_period = SettingsModel.get_current_time_period()
       
         self.assignment_id = assignment_id
         self.comment = comment
@@ -61,7 +62,7 @@ class CollectorPriceModel(db.Model):
     # used to find the assignment record by assignment id for the current time period
     @classmethod
     def find_by_assignment_id(cls, assignment_id):
-        time_period = datetime.today().strftime('%Y-%m-01')
+        time_period = SettingsModel.get_current_time_period()
         return cls.query.filter_by(assignment_id=assignment_id, time_period=time_period).first()
     
     # used to update assignment price
@@ -84,10 +85,14 @@ class CollectorPriceModel(db.Model):
     # used to delete the price record from the database
     @classmethod
     def clear_assignment_price(cls, assignment_id):
-        price = cls.query.filter_by(assignment_id=assignment_id).first()
-        if price:
+        
+        time_period = SettingsModel.get_current_time_period()
+        prices = cls.query.filter_by(assignment_id=assignment_id, time_period=time_period ).all()
+
+        for price in prices:
             db.session.delete(price)
-            db.session.commit()
+        
+        db.session.commit()
     
     # used to create a price record for an assignment
     @classmethod

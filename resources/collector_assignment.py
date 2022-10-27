@@ -1,9 +1,11 @@
 from tkinter import E
 from flask_restful import Resource, request
+from flask import send_file
 from marshmallow import INCLUDE, ValidationError
 
 from models.collector_assignment import AssignmentModel
 from models.collector_price import CollectorPriceModel
+from models.settings import SettingsModel, can_access_assignments
 from validators.assignment import AssignmentIdentitySchema, AssignmentPricesIdentitySchema, AssignmentSchema
 from validators.errors import NotFoundError, ServerError, Validation_Error
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -16,46 +18,88 @@ class CollectorAssignmentList(Resource):
 
     @jwt_required()
     def get(self):
+        
         try:
-            args = request.args.to_dict()
-            return AssignmentModel.find_assignments(args)
+
+            # get the query string parameters
+            query = request.args.to_dict()
+
+            # get the filters ready
+            filter = {
+                "search": query.get("search", ''),
+                "page": query.get("page", None),
+                "rows_per_page": query.get("rows_per_page", None),
+                "sort_by": query.get("sort_by", None),
+                "sort_desc": query.get("sort_desc", False),
+                'collector_id': query.get('collector_id', None),
+                'variety_id': query.get('variety_id', None),
+                'region_id': query.get('region_id', None),
+                'status': query.get('status', None)
+            }
+
+            # get the filters validated
+            try:
+
+                if filter['page'] and filter['rows_per_page'] :
+
+                    int(filter['page'])
+                    int(filter['rows_per_page'])
+
+            except:
+                raise Validation_Error("Invalid page or rows_per_page")
+
+
+            # get the list of varieties and total
+            result = AssignmentModel.find_all(filter)
+
+            return {"total": result["count"], "assignments": result["assignments"]  }, 200
+        
         except Exception as e:
             print(e)
-            raise ServerError()
+            raise ServerError() 
+        
+
 
     @jwt_required()
-
+    @can_access_assignments
     def post(self):
+
         # loads the raw data from the body
         raw_assignments = request.get_json()
 
         # validates the data
         try:
             assignments = [ assignmentSchema.load(assignment) for assignment in raw_assignments ]
+
         except ValidationError as err:
             print(err)
             return {"errors": err.messages}, 400
 
         # saves the data
         for assignment in assignments:
-            assignment.save_to_db()
+            assignment.save_to_db('active')
 
         #respond to the client request    
         return {
             "message": "Assignment Submitted Successfully", 
             "assignments": [ assignment.json() for assignment in assignments]
         }, 201
+
+        
 class CollectorAssignment(Resource):
 
-    # @jwt_required()
+    @jwt_required()
+    @can_access_assignments
     def get(self, id):
         assignment = AssignmentModel.find_by_id(id)
         if assignment:
             return assignment.json()
-        return NotFoundError("Assignment")          
+        return NotFoundError("Assignment")      
+
 class ActivateAssignments(Resource):
     
     @jwt_required()
+    @can_access_assignments
     def put(self, status):
 
         if status not in ["active", "inactive", "rejected"]:
@@ -77,9 +121,11 @@ class ActivateAssignments(Resource):
                 changeAssignments.append(assignment.json())
             
         return changeAssignments, 200
+
 class UploadAssignmentsPrices(Resource):
 
     @jwt_required()
+    @can_access_assignments
     def put(self):
 
         try:
@@ -97,6 +143,7 @@ class UploadAssignmentsPrices(Resource):
             changeAssignmentPrices = []
 
             for item in assignments:
+                print(item)
 
                 #verify if there is a price with this assignment id
                 price = CollectorPriceModel.find_by_assignment_id(item["id"])
@@ -129,16 +176,33 @@ class UploadAssignmentsPrices(Resource):
         except Exception as err:
             print(err)
             raise ServerError()
+
+
+# Used to get the assignments for the collector based on collector_id
 class CollectorAssignmentListByCollector(Resource):
     @jwt_required()
+    @can_access_assignments
     def get(self, collector_id):
         try:
             return AssignmentModel.find_by_collector(collector_id) 
         except Exception as err:
             print(err)
             raise ServerError()
-            
-class CollectorAutomatedAssignmentList(Resource):
+
+
+# Used to get the assignments that were substituted and the varieties are new
+class CollectorAssignmentSubstitutionsWithNewVariety(Resource):
+    @jwt_required()
+    @can_access_assignments
+    def get(self):
+        try:
+            return AssignmentModel.find_substitutions_with_new_varieties() 
+        except Exception as err:
+            print(err)
+            raise ServerError()
+
+
+class CollectorAutomatedAssignmentList(Resource): 
     @jwt_required()
     def get(self):
         try:
@@ -156,16 +220,80 @@ class CollectorHeadquarterAssignmentList(Resource):
             print(err)
             raise ServerError()
 
-class CollectorAutomatedAssignmentSync(Resource):
-    
+
+class CollectorAssignmentStatistics(Resource):
     @jwt_required()
-    def put(self):
-
+    def get(self):
         try:
-            
-            # get all the automated assignments
-            AssignmentModel.sync_automated_assignments()
-
-
+            return AssignmentModel.find_statistics() 
         except Exception as err:
+            print(err)
             raise ServerError()
+
+
+class CollectorOutletCoverageStats(Resource):
+    @jwt_required()
+    def get(self):
+        try:
+            return AssignmentModel.find_outlet_coverage_stats() 
+        except Exception as err:
+            print(err)
+            raise ServerError()
+
+
+class CollectorFilterAssignments(Resource):
+    @jwt_required()
+    def get(self):
+        try:
+
+            # get the query string parameters
+            query = request.args.to_dict()
+
+            # get the filters ready
+            filter = {
+                "search": query.get("search", ''),
+                "page": query.get("page", None),
+                "rows_per_page": query.get("rows_per_page", None),
+                "sort_by": query.get("sort_by", None),
+                "sort_desc": query.get("sort_desc", False),
+                'collector_id': query.get('collector_id', None),
+                'region_id': query.get('region_id', None),
+                'price_status': query.get('price_status', None),
+                'collection_process': query.get('collection_process', None),
+                'requested_substitution_status': query.get('requested_substitution_status', None),
+            }
+
+            # get the filters validated
+            try:
+
+                if filter['page'] and filter['rows_per_page'] :
+                    int(filter['page'])
+                    int(filter['rows_per_page'])
+
+
+            except:
+                raise Validation_Error("Invalid page or rows_per_page")
+
+            if filter['price_status'] and filter['price_status'] not in [None, 'approved', 'missing', 'rejected', 'collected', 'pending']:
+                    raise ValidationError(["Invalid price status"])
+
+            if filter['collection_process'] and filter['collection_process'] not in [None, 'collected', 'substituted']:
+                raise ValidationError(["Invalid price status"])
+
+            if filter['requested_substitution_status'] and filter['requested_substitution_status'] not in [None, 'pending', 'approved', 'rejected']:
+                raise ValidationError(["Invalid price status"])
+
+
+            # get the list of varieties and total
+            result = AssignmentModel.filter_current_assignments(filter)
+
+            return {"total": result["count"], "assignments": result["assignments"]  }, 200
+
+        except ValidationError as err:
+            print(err)
+            raise Validation_Error()
+        
+        except Exception as e:
+            print(e)
+            raise ServerError() 
+        

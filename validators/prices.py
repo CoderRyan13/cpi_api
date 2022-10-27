@@ -17,3 +17,6 @@ class AssignmentPriceApprovalSchema(Schema):
     assignment_id = fields.Integer(validate=[validate.Range(min=1)], required=True, error_messages={"required": "assignment_id is required."})
     status = fields.String(required=True, validate=[validate.OneOf(choices=['approved', 'rejected'])], error_messages={"required": "status is required."})
 
+class AssignmentExportSchema(Schema):
+    time_period = fields.DateTime(format='%Y-%m-01', required=True, error_messages={"required": "time_period is required."})
+    area_id = fields.Integer(required=True, validate=[validate.Range(min=1)],  error_messages={"required": "status is required."})

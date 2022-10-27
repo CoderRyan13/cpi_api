@@ -3,6 +3,7 @@ from models.collector_product import CollectorProductModel
 
 from models.collector_variety import CollectorVarietyModel
 
+
 def validate_length(val):
     if len(val) > 255:
         raise ValidationError('Length of string is too long')
@@ -16,7 +17,6 @@ class VarietySchema(Schema):
     @post_load
     def make_variety(self, data, **kwargs):
         return CollectorVarietyModel(**data)
-
 
 def validate_code(val):
     product = CollectorProductModel.find_by_code(val)
