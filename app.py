@@ -3,13 +3,11 @@ from flask import Flask
 from flask_restful import Api
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
-from data_loaders.areas import AreasRawDataLoader
 from data_loaders.configure_assignments import ConfigureAssignments
-from data_loaders.outlets import OutletsRawDataLoader
 from data_loaders.sync_automated_assignments import SyncAutomatedAssignments
 from data_loaders.upload_excel import UploadExcel
-from data_loaders.varieties import VarietiesRawDataLoader
 from db import db
+from env import JWT_SECRET_KEY, PORTAL_CONFIG_STRING, PORTAL_CONFIGS
 from resources.collector import Collectors
 from resources.collector_area import CollectorArea, CollectorAreaList
 from resources.collector_assignment import ActivateAssignments, CollectorAssignment, CollectorAssignmentList, CollectorAssignmentListByCollector, CollectorAssignmentStatistics, CollectorAssignmentSubstitutionsWithNewVariety, CollectorAutomatedAssignmentList, CollectorFilterAssignments, CollectorHeadquarterAssignmentList, CollectorOutletCoverageStats, UploadAssignmentsPrices
@@ -27,8 +25,12 @@ from flask_cors import CORS
 
 from resources.time_period import CurrentTimePeriod, TimePeriods
 from resources.collector_user import ChangePassword, Login, User, VerifyToken
-from data_loaders.products import ProductsRawDataLoader
-from data_loaders.assignments import AssignmentsRawDataLoader
+
+# from data_loaders.areas import AreasRawDataLoader
+# from data_loaders.outlets import OutletsRawDataLoader
+# from data_loaders.varieties import VarietiesRawDataLoader
+# from data_loaders.products import ProductsRawDataLoader
+# from data_loaders.assignments import AssignmentsRawDataLoader
 
 app = Flask(__name__) 
 CORS(app)
@@ -44,8 +46,8 @@ jwt = JWTManager(app)
 
 
 #CONFIGURES THE DATA BASE CONNECTION
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:mysql@localhost/cpi-collector'
-app.config['SQLALCHEMY_BINDS'] = {'cpi': 'mysql://sib_gian:Letmein123!@192.168.0.3/cpi2' }
+app.config['SQLALCHEMY_DATABASE_URI'] = PORTAL_CONFIG_STRING
+# app.config['SQLALCHEMY_BINDS'] = {'cpi': 'mysql://sib_gian:Letmein123!@192.168.0.3/cpi2' }
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
@@ -157,11 +159,11 @@ api.add_resource( ChangePassword, '/change-password/<int:id>')
 api.add_resource( User, '/user')
 
 # ---------------------- DATA LOADERS FROM SIMA ----------------------
-api.add_resource( ProductsRawDataLoader, "/products-dataloader" )
-api.add_resource( VarietiesRawDataLoader, '/varieties-dataloader' )
-api.add_resource( AssignmentsRawDataLoader, '/assignments-dataloader' )
-api.add_resource( OutletsRawDataLoader, '/outlets-dataloader' )
-api.add_resource( AreasRawDataLoader, '/areas-dataloader' )
+# api.add_resource( ProductsRawDataLoader, "/products-dataloader" )
+# api.add_resource( VarietiesRawDataLoader, '/varieties-dataloader' )
+# api.add_resource( AssignmentsRawDataLoader, '/assignments-dataloader' )
+# api.add_resource( OutletsRawDataLoader, '/outlets-dataloader' )
+# api.add_resource( AreasRawDataLoader, '/areas-dataloader' )
 
 # ---------------------- PORTAL DATA CONFIGURATION --------------------
 api.add_resource( UploadExcel, '/read-excel')
@@ -169,7 +171,7 @@ api.add_resource( UploadExcel, '/read-excel')
 # api.add_resource( ConfigureAutomatedAssignments, '/configure-automated-assignments/<string:filename>' )
 api.add_resource( ConfigureAssignments, '/configure-assignments/<string:filename>' )
 
-
+ 
 #RUNS THE API
 if __name__ == '__main__':
     app.run( host='0.0.0.0', port=8080, debug=True )

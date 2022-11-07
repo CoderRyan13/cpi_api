@@ -1,30 +1,11 @@
 from flask_sqlalchemy import SQLAlchemy
 import mysql.connector
-# from mysql.connector import Error
+from env import PORTAL_CONFIGS
 
 db = SQLAlchemy()
 
-
-PORTAL_CONFIGS = {  
-                    "host":'localhost',
-                    "database":'cpi-collector',
-                    "user":'root',
-                    "password":'mysql'
-                }
-
-CPI_CONFIGS = {  
-                    "host":'localhost',
-                    "database":'cpi-1-test',
-                    "user":'root',
-                    "password":'mysql'
-                }
-
-
 def get_portal_db_connection():
     return mysql.connector.connect(**PORTAL_CONFIGS)
-
-def get_cpi_db_connection():
-    return mysql.connector.connect(**CPI_CONFIGS)
 
 
 

@@ -42,6 +42,7 @@ class Login(Resource):
         if check_password_hash(user.password, password):
 
             access_token = create_access_token(identity=user.id)
+            print(access_token)
             return {
                 'token': access_token, 
                 'user': user.json(),

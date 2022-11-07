@@ -1,6 +1,6 @@
 from cgi import print_exception
 from datetime import  datetime
-from db import  db, get_cpi_db_connection, get_portal_db_connection
+from db import  db, get_portal_db_connection
 from sqlalchemy import desc, extract, func
 from models.collector_price import CollectorPriceModel
 from models.settings import SettingsModel
@@ -53,7 +53,7 @@ ASSIGNMENT_VIEW_QUERY = """
                     substitution_variety_created_at,
                     substitution_variety_approved_by,
                     substitution_variety_code
-                FROM current_time_period_assignments"""
+                FROM Current_Time_Period_Assignments"""
 
 
 # COLUMNS
@@ -340,85 +340,85 @@ class AssignmentModel(db.Model):
         return cls.query.filter_by(outlet_product_variety_id=opv_id, time_period=time_period, collector_id=collector_id).first()
 
     # Used to get the assignments from the SIMA DB
-    @classmethod
-    def load_period_assignment(cls):
+    # @classmethod
+    # def load_period_assignment(cls):
 
-        #query the database
+    #     #query the database
 
-        query = """
-            SELECT
-            opv.id as outlet_product_variety_id,
-            (
-                SELECT comment 
-                FROM price 
-                WHERE price.outlet_vareity_id = opv.id 
-                ORDER BY time_period DESC 
-                LIMIT 1
-            ) as comment,
-            (
-                SELECT price 
-                FROM price 
-                WHERE price.outlet_vareity_id = opv.id 
-                ORDER BY time_period DESC 
-                LIMIT 1
-            ) as new_price,
-            (
-                SELECT price 
-                FROM price 
-                WHERE price > 0 AND price.outlet_vareity_id = opv.id 
-                ORDER BY time_period DESC 
-                LIMIT 1
-            ) as previous_price,
-            (
-                SELECT CONCAT(time_period, "") as time_period 
-                FROM price 
-                WHERE price.outlet_vareity_id = opv.id 
-                ORDER BY time_period DESC 
-                LIMIT 1
-            ) as time_period,
-            o.id as outlet_id,
-            o.area_id
-            o.est_name as outlet_name,
-            v.code,
-            uop.user_id as collector_id,
-            (
-                SELECT name 
-                FROM user 
-                WHERE user.id = uop.user_id 
-                LIMIT 1
-            ) as collector_name,
-            (
-                SELECT CONCAT(time_period, "") 
-                FROM price 
-                WHERE price > 0 AND price.outlet_vareity_id = opv.id 
-                ORDER BY time_period DESC 
-                LIMIT 1
-            ) as date_last_collected
-            FROM outlet_product_variety as opv 
-            JOIN variety as v on opv.variety_id = v.id 
-            JOIN outlet_product as op on opv.outlet_product_id = op.id 
-            JOIN user_outlet_product as uop on uop.outlet_product_id = op.id
-            JOIN outlet as o on op.outlet_id = o.id 
-            WHERE opv.is_active = 1
-        """
+    #     query = """
+    #         SELECT
+    #         opv.id as outlet_product_variety_id,
+    #         (
+    #             SELECT comment 
+    #             FROM price 
+    #             WHERE price.outlet_vareity_id = opv.id 
+    #             ORDER BY time_period DESC 
+    #             LIMIT 1
+    #         ) as comment,
+    #         (
+    #             SELECT price 
+    #             FROM price 
+    #             WHERE price.outlet_vareity_id = opv.id 
+    #             ORDER BY time_period DESC 
+    #             LIMIT 1
+    #         ) as new_price,
+    #         (
+    #             SELECT price 
+    #             FROM price 
+    #             WHERE price > 0 AND price.outlet_vareity_id = opv.id 
+    #             ORDER BY time_period DESC 
+    #             LIMIT 1
+    #         ) as previous_price,
+    #         (
+    #             SELECT CONCAT(time_period, "") as time_period 
+    #             FROM price 
+    #             WHERE price.outlet_vareity_id = opv.id 
+    #             ORDER BY time_period DESC 
+    #             LIMIT 1
+    #         ) as time_period,
+    #         o.id as outlet_id,
+    #         o.area_id
+    #         o.est_name as outlet_name,
+    #         v.code,
+    #         uop.user_id as collector_id,
+    #         (
+    #             SELECT name 
+    #             FROM user 
+    #             WHERE user.id = uop.user_id 
+    #             LIMIT 1
+    #         ) as collector_name,
+    #         (
+    #             SELECT CONCAT(time_period, "") 
+    #             FROM price 
+    #             WHERE price > 0 AND price.outlet_vareity_id = opv.id 
+    #             ORDER BY time_period DESC 
+    #             LIMIT 1
+    #         ) as date_last_collected
+    #         FROM outlet_product_variety as opv 
+    #         JOIN variety as v on opv.variety_id = v.id 
+    #         JOIN outlet_product as op on opv.outlet_product_id = op.id 
+    #         JOIN user_outlet_product as uop on uop.outlet_product_id = op.id
+    #         JOIN outlet as o on op.outlet_id = o.id 
+    #         WHERE opv.is_active = 1
+    #     """
 
-        cpi_db = get_cpi_db_connection()
-        cpi_db_cursor = cpi_db.cursor()
-        cpi_db_cursor.execute(query)
-        assignments = cpi_db_cursor.fetchall()
-        cpi_db.close()
+    #     cpi_db = get_cpi_db_connection()
+    #     cpi_db_cursor = cpi_db.cursor()
+    #     cpi_db_cursor.execute(query)
+    #     assignments = cpi_db_cursor.fetchall()
+    #     cpi_db.close()
 
-        #create a list of assignments
-        assignment_list = [ 
-            AssignmentModel(assignment[0], assignment[1], assignment[2], assignment[3], assignment[4], assignment[5], assignment[6], assignment[7], assignment[8], assignment[9])
-            for assignment in assignments
-        ]
+    #     #create a list of assignments
+    #     assignment_list = [ 
+    #         AssignmentModel(assignment[0], assignment[1], assignment[2], assignment[3], assignment[4], assignment[5], assignment[6], assignment[7], assignment[8], assignment[9])
+    #         for assignment in assignments
+    #     ]
         
-        #save the list to the database
-        for assignment in assignment_list:
-            assignment.save_to_db()
+    #     #save the list to the database
+    #     for assignment in assignment_list:
+    #         assignment.save_to_db()
 
-        return assignment_list  
+    #     return assignment_list  
 
     # Delete all the substitution Records For the Assignment with given Id
     @classmethod
@@ -764,37 +764,37 @@ class AssignmentModel(db.Model):
                 name,
                 (
                     SELECT COUNT(*) as total
-                    FROM current_time_period_assignments
+                    FROM Current_Time_Period_Assignments
                     WHERE area_id = area.id
                 ) as total,
                 (
                     SELECT COUNT(*) as total
-                    FROM current_time_period_assignments
+                    FROM Current_Time_Period_Assignments
                     WHERE area_id = area.id AND new_price = 0
                 ) as missing,
                 (
                     SELECT COUNT(*) as total
-                    FROM current_time_period_assignments
+                    FROM Current_Time_Period_Assignments
                     WHERE area_id = area.id AND (new_price is not null or substitution_assignment_id is not null)
                 ) as collected,
                 (
                     SELECT COUNT(*) as total
-                    FROM current_time_period_assignments
+                    FROM Current_Time_Period_Assignments
                     WHERE area_id = area.id AND (status = 'approved' or substitution_status = 'approved')
                 ) as approved,
                 (
                     SELECT COUNT(*) as total
-                    FROM current_time_period_assignments
+                    FROM Current_Time_Period_Assignments
                     WHERE area_id = area.id AND (status = 'rejected' or substitution_status = 'rejected')
                 ) as rejected,
                 (
                     SELECT COUNT(*) as total
-                    FROM current_time_period_assignments
+                    FROM Current_Time_Period_Assignments
                     WHERE area_id = area.id AND substitution_assignment_id is not null
                 ) as substitution,
                 (
                     SELECT COUNT(*) as total
-                    FROM current_time_period_assignments
+                    FROM Current_Time_Period_Assignments
                     WHERE area_id = area.id AND request_substitution_status = 'pending'
                 ) as pending_requested_substitution    
             from collector_area as area;
@@ -835,33 +835,41 @@ class AssignmentModel(db.Model):
                 (
                     SELECT 
                         count(*)
-                    FROM outlet_coverage_view as ocv
+                    FROM Outlet_Coverage_View as ocv
                     WHERE ocv.area_id = ca.id 
                     LIMIT 1
                 ) as total_outlets,
                 (
                     SELECT 
                         count(*)
-                    FROM outlet_coverage_view as ocv
+                    FROM Outlet_Coverage_View as ocv
                     WHERE ocv.area_id = ca.id and total_collected_assignments > 0
                     LIMIT 1
                 ) as visited_outlets,
                 (
                     SELECT 
                         count(*)
-                    FROM outlet_coverage_view as ocv
+                    FROM Outlet_Coverage_View as ocv
                     WHERE ocv.area_id = ca.id and total_collected_assignments = total_assignments
                     LIMIT 1
                 ) as completed_outlets
             FROM collector_area as ca 
         """
 
+        print('PRIOR DB CLOSED')
+
         # get db connection to query
         portal_db_conn = get_portal_db_connection()
         db_cursor = portal_db_conn.cursor()
+
+
         db_cursor.execute(base_query)
+        print('TESTING')
         raw_data = db_cursor.fetchall()
         portal_db_conn.close()
+
+
+        print('AFTER DB CLOSED')
 
         areas = []
 
@@ -873,6 +881,10 @@ class AssignmentModel(db.Model):
                 'visited_outlets': data[3],
                 'completed_outlets': data[4]
             })
+
+
+        print(areas)
+
 
         return areas
 

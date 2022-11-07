@@ -15,7 +15,7 @@ newVarietySchema = NewVarietySchema()
 
 class CollectorVarietyList(Resource):
     
-    # @jwt_required()
+    @jwt_required()
     def get(self):
         try:
             # get the query string parameters
@@ -121,6 +121,9 @@ class CollectorVarietyListByCollector(Resource):
         @jwt_required()
         @can_access_assignments
         def get(self, collector_id):
+
+            print(request.headers)
+
             print(collector_id)
             varieties = CollectorVarietyModel.find_by_collector(collector_id)
             return varieties
