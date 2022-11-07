@@ -1,4 +1,3 @@
-from tkinter import E
 from flask_restful import Resource, request
 from flask import send_file
 from marshmallow import INCLUDE, ValidationError
