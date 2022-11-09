@@ -142,7 +142,7 @@ class CollectorVarietyModel(db.Model):
             FROM collector_variety 
             WHERE collector_variety.product_id IN (
                 SELECT c_v.product_id
-                FROM Current_Time_Period_Assignments as assignment
+                FROM current_time_period_assignments as assignment
                 JOIN collector_variety as c_v on( c_v.id = assignment.variety_id OR c_v.id = assignment.substitution_variety_id ) 
                	WHERE assignment.collector_id = %s
             	AND assignment.time_period = %s

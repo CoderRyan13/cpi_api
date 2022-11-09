@@ -53,7 +53,7 @@ ASSIGNMENT_VIEW_QUERY = """
                     substitution_variety_created_at,
                     substitution_variety_approved_by,
                     substitution_variety_code
-                FROM Current_Time_Period_Assignments"""
+                FROM current_time_period_assignments"""
 
 
 # COLUMNS
@@ -764,37 +764,37 @@ class AssignmentModel(db.Model):
                 name,
                 (
                     SELECT COUNT(*) as total
-                    FROM Current_Time_Period_Assignments
+                    FROM current_time_period_assignments
                     WHERE area_id = area.id
                 ) as total,
                 (
                     SELECT COUNT(*) as total
-                    FROM Current_Time_Period_Assignments
+                    FROM current_time_period_assignments
                     WHERE area_id = area.id AND new_price = 0
                 ) as missing,
                 (
                     SELECT COUNT(*) as total
-                    FROM Current_Time_Period_Assignments
+                    FROM current_time_period_assignments
                     WHERE area_id = area.id AND (new_price is not null or substitution_assignment_id is not null)
                 ) as collected,
                 (
                     SELECT COUNT(*) as total
-                    FROM Current_Time_Period_Assignments
+                    FROM current_time_period_assignments
                     WHERE area_id = area.id AND (status = 'approved' or substitution_status = 'approved')
                 ) as approved,
                 (
                     SELECT COUNT(*) as total
-                    FROM Current_Time_Period_Assignments
+                    FROM current_time_period_assignments
                     WHERE area_id = area.id AND (status = 'rejected' or substitution_status = 'rejected')
                 ) as rejected,
                 (
                     SELECT COUNT(*) as total
-                    FROM Current_Time_Period_Assignments
+                    FROM current_time_period_assignments
                     WHERE area_id = area.id AND substitution_assignment_id is not null
                 ) as substitution,
                 (
                     SELECT COUNT(*) as total
-                    FROM Current_Time_Period_Assignments
+                    FROM current_time_period_assignments
                     WHERE area_id = area.id AND request_substitution_status = 'pending'
                 ) as pending_requested_substitution    
             from collector_area as area;
@@ -835,21 +835,21 @@ class AssignmentModel(db.Model):
                 (
                     SELECT 
                         count(*)
-                    FROM Outlet_Coverage_View as ocv
+                    FROM outlet_coverage_view as ocv
                     WHERE ocv.area_id = ca.id 
                     LIMIT 1
                 ) as total_outlets,
                 (
                     SELECT 
                         count(*)
-                    FROM Outlet_Coverage_View as ocv
+                    FROM outlet_coverage_view as ocv
                     WHERE ocv.area_id = ca.id and total_collected_assignments > 0
                     LIMIT 1
                 ) as visited_outlets,
                 (
                     SELECT 
                         count(*)
-                    FROM Outlet_Coverage_View as ocv
+                    FROM outlet_coverage_view as ocv
                     WHERE ocv.area_id = ca.id and total_collected_assignments = total_assignments
                     LIMIT 1
                 ) as completed_outlets

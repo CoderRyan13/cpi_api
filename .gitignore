@@ -1,9 +1,4 @@
 venv
-<<<<<<< HEAD
 imports
 env.py
 */__pycache__/*
-=======
-env.py
-*/__pycache__/*
->>>>>>> db1c82d4d5b68cc3a5a2f6eb7807f46e1ed8510b
