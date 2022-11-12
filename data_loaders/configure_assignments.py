@@ -138,13 +138,13 @@ def check_data_existence_validity(data: pd.DataFrame):
 
         if record.variety_id is None:
             result["error"] = True,
-            result["message"] = f"Invalid variety_id: {record.variety_id}, record does not exist in the database!"
+            result["message"] = f"Invalid variety_id: {record.variety_id}, record value cannot be null!"
             break
 
         
         if record.outlet_id is None:
             result["error"] = True,
-            result["message"] = f"Invalid outlet_id: {record.outlet_id}, record does not exist in the database!"
+            result["message"] = f"Invalid outlet_id: {record.outlet_id}, record value cannot be null!"
             break 
 
 

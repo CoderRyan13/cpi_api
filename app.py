@@ -8,7 +8,11 @@ from data_loaders.sync_automated_assignments import SyncAutomatedAssignments
 from data_loaders.upload_excel import UploadExcel
 from db import db
 from env import JWT_SECRET_KEY, PORTAL_CONFIG_STRING, PORTAL_CONFIGS
+from imports.assignments import AssignmentDataImport
+from imports.outlets import OutletsDataImport
+from imports.prices import PricesDataImport
 from imports.products import ProductsDataImport
+from imports.varieties import VarietiesDataImport
 from resources.collector import Collectors
 from resources.collector_area import CollectorArea, CollectorAreaList
 from resources.collector_assignment import ActivateAssignments, CollectorAssignment, CollectorAssignmentList, CollectorAssignmentListByCollector, CollectorAssignmentStatistics, CollectorAssignmentSubstitutionsWithNewVariety, CollectorAutomatedAssignmentList, CollectorFilterAssignments, CollectorHeadquarterAssignmentList, CollectorOutletCoverageStats, UploadAssignmentsPrices
@@ -160,10 +164,13 @@ api.add_resource( ChangePassword, '/api/change-password/<int:id>')
 api.add_resource( User, '/api/user')
 
 
-
 # ---------------------- DATA LOADERS FROM SIMA ----------------------
 
 api.add_resource( ProductsDataImport, '/api/import-products')
+api.add_resource( VarietiesDataImport, '/api/import-varieties')
+api.add_resource( OutletsDataImport, '/api/import-outlets')
+api.add_resource( AssignmentDataImport, '/api/import-assignments')
+api.add_resource( PricesDataImport, '/api/import-prices')
 
 
 # ---------------------- DATA LOADERS FROM SIMA ----------------------

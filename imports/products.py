@@ -16,8 +16,16 @@ class ProductsDataImport(Resource):
         file = request.files.get("file", None) 
         if file and file.mimetype == 'text/csv':
 
+
+            print('Importing products...')
+            print(file.mimetype)
+
+
             # Read the File
             data = pd.read_csv(file)
+
+            print('Importing products...')
+            print(file.mimetype)
 
             # validate the excel Columns
             result = required_columns_exist(data, REQUIRED_COLUMNS)

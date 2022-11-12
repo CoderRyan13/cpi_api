@@ -21,7 +21,7 @@ class AssignmentSchema(Schema):
     outlet_id =  fields.Integer(validate=validate.Range(min=1), required=True, error_messages={"required": "outlet_id is required."})
     variety_id =  fields.Integer(validate=validate.Range(min=1), required=True, error_messages={"required": "variety_id is required."})
     collector_id =  fields.Integer(validate=validate.Range(min=1), required=True, error_messages={"required": "collector_id is required."})
-    from_outlet_id =  fields.Integer(validate=validate.Range(min=1), required=False, allow_none=True)
+    from_assignment_id =  fields.Integer(validate=validate.Range(min=1), required=False, allow_none=True)
     is_headquarter =  fields.Boolean( required=True, error_messages={"required": "is_headquarter is required."})
     is_monthly =  fields.Boolean( required=True, error_messages={"required": "is_monthly is required."})
     

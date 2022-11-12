@@ -48,7 +48,7 @@ ASSIGNMENT_VIEW_QUERY = """
                     substitution_comment,
                     product_id,
                     area_id,
-                    from_outlet_id,
+                    from_assignment_id,
                     collector_id,
                     substitution_variety_created_at,
                     substitution_variety_approved_by,
@@ -82,7 +82,7 @@ main_columns = [
 'substitution_comment',
 'product_id',
 'area_id',
-'from_outlet_id',
+'from_assignment_id',
 'collector_id',
 'substitution_variety_created_at',
 'substitution_variety_approved_by',
@@ -104,7 +104,7 @@ class AssignmentModel(db.Model):
     area_id = db.Column(db.Integer, db.ForeignKey("collector_area.id"), nullable=False)
     is_monthly = db.Column(db.Integer, nullable=False)
     is_headquarter = db.Column(db.Integer, nullable=False)
-    from_outlet_id = db.Column(db.Integer, nullable=False)
+    from_assignment_id = db.Column(db.Integer, nullable=False)
     status = db.Column( db.Enum("active", "inactive"), nullable=False) 
     create_date_time = db.Column(db.DateTime, nullable=False)
     update_date_time = db.Column(db.DateTime, nullable=False)
@@ -126,7 +126,7 @@ class AssignmentModel(db.Model):
     collector_id, 
     area_id,
     is_headquarter = None,
-    from_outlet_id = None,
+    from_assignment_id = None,
     is_monthly=None,
     parent_id = None,
     outlet_product_variety_id = None, 
@@ -145,7 +145,7 @@ class AssignmentModel(db.Model):
         self.status = status
         self.is_monthly = is_monthly
         self.is_headquarter = is_headquarter
-        self.from_outlet_id = from_outlet_id
+        self.from_assignment_id = from_assignment_id
 
     def json(self):
 
@@ -237,7 +237,7 @@ class AssignmentModel(db.Model):
                             ass.is_monthly, 
                             ass.is_headquarter, 
                             fo.est_name as from_outlet_name, 
-                            fo.id as from_outlet_id, 
+                            fo.id as from_assignment_id, 
                             ass.create_date_time, 
                             ass.status,
                             ass.area_id,
@@ -251,7 +251,7 @@ class AssignmentModel(db.Model):
                         JOIN collector_outlet as o ON ass.outlet_id = o.id
                         JOIN collector_variety as v ON ass.variety_id = v.id
                         JOIN collector_area as area on o.area_id = area.id
-                        LEFT JOIN collector_outlet as fo on ass.from_outlet_id = fo.id
+                        LEFT JOIN collector_outlet as fo on ass.from_assignment_id = fo.id
                         WHERE CONCAT (ass.id, v.name, o.est_name, u.name ) LIKE %s
                     """
         
@@ -317,7 +317,7 @@ class AssignmentModel(db.Model):
                 "is_monthly": record[6],
                 "is_headquarter": record[7],
                 "from_outlet_name": record[8],
-                "from_outlet_id": record[9],
+                "from_assignment_id": record[9],
                 "create_date_time": str(record[10]) if record[10] else None,
                 "status": record[11],
                 "area_id": record[12],
@@ -475,6 +475,7 @@ class AssignmentModel(db.Model):
 
             assignment_sub.outlet_id = substitution['outlet_id']
             assignment_sub.variety_id = substitution['variety_id']
+            assignment_sub.from_assignment_id = substitution.get("from_assignment_id", None)
             assignment_sub.collector_id = assignment.collector_id
             assignment_sub.area_id = assignment.area_id
 
@@ -485,6 +486,7 @@ class AssignmentModel(db.Model):
                 parent_id= substitution['assignment_id'],
                 outlet_id = substitution['outlet_id'],
                 variety_id = substitution['variety_id'],
+                from_assignment_id = substitution.get("from_assignment_id", None),
                 collector_id = assignment.collector_id,
                 area_id = assignment.area_id,
                 create_date_time= datetime.now()
@@ -543,7 +545,7 @@ class AssignmentModel(db.Model):
         assignment_query = f"""
                 {ASSIGNMENT_VIEW_QUERY}
                 WHERE assignment_status = 'active'
-                    AND from_outlet_id IS NULL
+                    AND from_assignment_id IS NULL
                     AND is_headquarter = 1
                     {'AND is_monthly = 1' if is_quarterly_month() == False else '' }            
             """
@@ -557,7 +559,7 @@ class AssignmentModel(db.Model):
         assignment_query = f"""
                 {ASSIGNMENT_VIEW_QUERY}
                 WHERE assignment_status = 'active'
-                    AND from_outlet_id IS NOT NULL
+                    AND from_assignment_id IS NOT NULL
                     {'AND is_monthly = 1' if is_quarterly_month() == False else '' }            
             """
         return cls.get_assignments_from_DB(assignment_query, ())
@@ -572,7 +574,7 @@ class AssignmentModel(db.Model):
         assignment_query = f"""
                {ASSIGNMENT_VIEW_QUERY}
                 WHERE collector_id = %s
-                AND from_outlet_id is null 
+                AND from_assignment_id is null 
                 AND assignment_status = 'active'
                 { 'AND is_monthly = 1' if is_quarterly_month() == False else '' }
             """
@@ -585,7 +587,7 @@ class AssignmentModel(db.Model):
 
         assignment_query = f"""
                {ASSIGNMENT_VIEW_QUERY}
-                WHERE from_outlet_id is null 
+                WHERE from_assignment_id is null 
                 AND assignment_status = 'active'
                 AND substitution_variety_approved_by is null
                 AND DATE_FORMAT(substitution_variety_created_at, '%Y-%m-01') = DATE_FORMAT((SELECT settings.value from settings where settings.name = 'current_time_period' limit 1), '%Y-%m-01')
@@ -633,7 +635,7 @@ class AssignmentModel(db.Model):
                 "can_substitute": False if assignment[19] == None else True if assignment[19] > 3 else False,
                 "product_id": assignment[22],
                 "area_id": assignment[23],
-                "from_outlet_id": assignment[24],
+                "from_assignment_id": assignment[24],
                 "collector_id": assignment[25],
                 "substitution_variety_created_at": str(assignment[26]) if assignment[26] else None,
                 "substitution_variety_approved_by": assignment[27],

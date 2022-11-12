@@ -24,25 +24,24 @@ class SyncAutomatedAssignments(Resource):
         for automated_assignment in automated_assignments:
 
             # find which assignment this automated assignment depends on
-            from_outlet_id = automated_assignment['from_outlet_id']
-            variety_id = automated_assignment['variety_id']
+            from_assignment_id = automated_assignment['from_assignment_id']
 
             # find which assignment this automated assignment depends on
-            from_assignment = AssignmentModel.find_assignment_by_outlet_and_variety(from_outlet_id, variety_id)
+            from_assignment = AssignmentModel.find_by_id(from_assignment_id)
             from_assignment_substitution = AssignmentModel.find_assignment_substitution(from_assignment.id)
 
             # Lets verify If a price has already been set to the automated assignment
 
             # Check if the automated assignment has been substituted before to clear it which also clears the prices
             if automated_assignment['substitution']:
-                AssignmentModel.clear_assignment_substitution(automated_assignment['substitution']["id"])
+                AssignmentModel.clear_assignment_substitution(automated_assignment["id"])
                 
             # check if the automated assignment has a price already to clear it 
             if automated_assignment['new_price']:
                 CollectorPriceModel.clear_assignment_price(automated_assignment['id'])
 
 
-            # First Check if the donor assignment that has a substitution
+            # First Check if the donor assignment has a substitution
             if from_assignment_substitution:
 
                 if from_assignment_substitution.price.status == 'approved':
@@ -55,10 +54,8 @@ class SyncAutomatedAssignments(Resource):
                         "price": from_assignment_substitution.price.price,
                         "comment": from_assignment_substitution.price.comment,
                         "collected_at": datetime.now(),
+                        "from_assignment_id": from_assignment_substitution.id
                     })
-
-                    # The From Outlet Id Can Change so the auto assignment substitution from outlet id needs to be updated
-                    automated_substitution.from_outlet_id = from_assignment_substitution.outlet_id
 
                     # approve the substitution price
                     automated_substitution.price.update_status( 'approved', user_id)
