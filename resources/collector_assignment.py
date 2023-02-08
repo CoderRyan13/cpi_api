@@ -154,14 +154,15 @@ class UploadAssignmentsPrices(Resource):
                         "price": item["new_price"],
                         "collected_at": item["collected_at"],
                         "comment": item["comment"],
-                        "collector_id": user_id
+                        "collector_id": user_id,
+                        "flag": None if item["new_price"] > 0 else "IMPUTED"
                     })
                     changeAssignmentPrices.append(new_price.json())
 
                 #if approved or inactive the assignment cannot be changed
                 elif price:
                     if price.status not in ["approved"]:
-                        price.update_price(item["new_price"], item["collected_at"], item["comment"], user_id)
+                        price.update_price(item["new_price"], item["collected_at"], item["comment"], user_id, None if item["new_price"] > 0 else "IMPUTED")
                         changeAssignmentPrices.append(price.json())
                 
                 # clear assignment price for substitution if any
@@ -260,6 +261,7 @@ class CollectorFilterAssignments(Resource):
                 'price_status': query.get('price_status', None),
                 'collection_process': query.get('collection_process', None),
                 'requested_substitution_status': query.get('requested_substitution_status', None),
+                'is_monthly_check' :  query.get('is_monthly_check', True)
             }
 
             # get the filters validated

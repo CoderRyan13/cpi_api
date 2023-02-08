@@ -70,6 +70,7 @@ def check_data_types(data):
         }
 
     except Exception as e:
+        print(e)
         return {
             "error": True,
             "message": """
@@ -129,10 +130,12 @@ def save_to_db(data, time_period):
         portal_db_cursor = portal_db.cursor()
 
         # find_query = """SELECT id FROM price WHERE assignment_id = %s AND time_period = %s"""
-        create_query = """ INSERT INTO price (assignment_id, price, comment,  time_period, collected_at, collector_id, status) VALUES (%s, %s, %s, %s, %s, %s, 'approved')"""
+        create_query = """ INSERT INTO price (assignment_id, price, comment, flag,  time_period, collected_at, collector_id, status) VALUES (%s, %s, %s, %s,  %s, %s, %s, 'approved')"""
         # update_query = """ UPDATE price SET price = %s WHERE id = %s"""
 
         for record in data.itertuples():
+
+            print(record)
 
             # for time_period in time_periods:
 
@@ -147,6 +150,7 @@ def save_to_db(data, time_period):
                 record.assignment_id, 
                 record.price,
                 "IMPORTED",
+                'IMPUTED' if record.price == 0 else None, 
                 time_period,
                 time_period,
                 2

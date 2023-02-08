@@ -4,6 +4,10 @@ from models.collector_variety import CollectorVarietyModel
 from models.settings import SettingsModel
 
 
+# create_assignment_price
+# update_price
+
+
 class CollectorPriceModel(db.Model):
 
     __tablename__ = 'price'
@@ -17,6 +21,7 @@ class CollectorPriceModel(db.Model):
     updated_by = db.Column(db.Integer, nullable=True)
     updated_at = db.Column(db.DateTime, nullable=True)
     status = db.Column( db.Enum("rejected", "approved"), nullable=True, default=None) 
+    flag = db.Column( db.String(255), nullable=True, default=None) 
         
 
     def __init__(
@@ -25,7 +30,8 @@ class CollectorPriceModel(db.Model):
         comment,
         price,
         collected_at,
-        collector_id
+        collector_id,
+        flag = None
     ):
 
         current_time_period = SettingsModel.get_current_time_period()
@@ -39,6 +45,7 @@ class CollectorPriceModel(db.Model):
         self.updated_at = None
         self.status = None
         self.collector_id = collector_id
+        self.flag = flag
 
     def json(self):
 
@@ -53,6 +60,7 @@ class CollectorPriceModel(db.Model):
             "updated_at": str(self.updated_at) if self.updated_at  else None,
             "collected_at":  str(self.collected_at) if self.collected_at else None,
             "status": self.status,
+            "flag": self.flag
         }
     
     def __str__(self): 
@@ -66,12 +74,16 @@ class CollectorPriceModel(db.Model):
         return cls.query.filter_by(assignment_id=assignment_id, time_period=time_period).first()
     
     # used to update assignment price
-    def update_price(self, new_price, collected_at, comment, collector_id):
+    def update_price(self, new_price, collected_at, comment, collector_id, flag):
+
         self.price = new_price
         self.collected_at = collected_at
         self.comment = comment
         self.status = None
         self.collector_id = collector_id
+        self.flag = flag
+
+
         db.session.commit()
 
     # used to update assignment status
@@ -98,12 +110,14 @@ class CollectorPriceModel(db.Model):
     @classmethod
     def create_assignment_price(cls, price):
 
+
         new_price = cls(
             assignment_id=price["assignment_id"],
             comment=price["comment"],
             price=price["price"],
             collected_at=price["collected_at"],
             collector_id=price["collector_id"],
+            flag=price['flag']
         )
         db.session.add(new_price)
         db.session.commit()

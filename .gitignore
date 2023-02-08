@@ -3,7 +3,14 @@ __pycache__
 venv
 env.py
 */__pycache__/*
+<<<<<<< HEAD
 models/__pycache__
 resources/__pycache__
 validators/__pycache__
 *.pyc
+=======
+__pycache__
+models/__pycache__
+resources/__pycache__
+data_loaders/__pycache__
+>>>>>>> 3cb8988706fc8b5d90c2db36fed9c7309889c5a4

@@ -35,7 +35,7 @@ class Login(Resource):
 
         print(user)
 
-        if user.type != type:
+        if user.type == 'collector' and type == 'HQ':
             raise Validation_Error()
          
         # compare password with hash of password in db
@@ -49,6 +49,7 @@ class Login(Resource):
                 }, 200
 
         else:
+            
             raise Validation_Error()
 
 class VerifyToken(Resource):

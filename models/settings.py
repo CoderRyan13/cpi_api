@@ -64,3 +64,31 @@ def can_access_assignments(f):
         return f(*args, **kwargs)
 
     return decorator
+
+
+
+# This decorator is used to verify if the collector is allowed to access/change data
+def can_access_assurance_assignments(f):
+    
+    @wraps(f)
+    def decorator(*args, **kwargs):
+
+        try:
+
+            # get the user id from the token
+            user_id = get_jwt_identity()
+
+            user: CollectorUserModel  = CollectorUserModel.find_by_id(user_id)
+            current_time_period = SettingsModel.get_current_time_period()
+
+            system_time_period = datetime.today().strftime('%Y-%m-01')
+
+            if user.type == 'HQ' and system_time_period == current_time_period:
+                return f(*args, **kwargs)
+
+            return {'message': 'You are not allowed to access this data'}, 403
+           
+        except:
+            raise ServerError();
+
+    return decorator        

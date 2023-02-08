@@ -52,7 +52,9 @@ ASSIGNMENT_VIEW_QUERY = """
                     collector_id,
                     substitution_variety_created_at,
                     substitution_variety_approved_by,
-                    substitution_variety_code
+                    substitution_variety_code,
+                    is_monthly,
+                    ( ( (new_price / previous_price) * 100) - 100 ) as price_change 
                 FROM current_time_period_assignments"""
 
 
@@ -87,6 +89,8 @@ main_columns = [
 'substitution_variety_created_at',
 'substitution_variety_approved_by',
 'substitution_variety_code',
+'is_monthly',
+'price_change'
 ]
 
 # ______________________ COLLECTOR ASSIGNMENT ______________________
@@ -509,12 +513,13 @@ class AssignmentModel(db.Model):
                 'comment': substitution['comment'],
                 'collected_at': substitution['collected_at'],
                 'collector_id': assignment.collector_id,
+                'flag': 'SUBSTITUTION'
             })
 
         else: 
 
             # Update the price record for the substitution
-            substitution_price.update_price(substitution['price'], substitution['collected_at'], substitution['comment'], collector_id)
+            substitution_price.update_price(substitution['price'], substitution['collected_at'], substitution['comment'], collector_id, "SUBSTITUTION")
 
         return assignment_sub
 
@@ -608,6 +613,7 @@ class AssignmentModel(db.Model):
 
         db_cursor.execute(assignment_query, values)
         assignments = db_cursor.fetchall()
+        print("SECOND assignment FETCHALL")
 
         portal_db_conn.close()
 
@@ -623,7 +629,7 @@ class AssignmentModel(db.Model):
                 "variety_id": assignment[4],
                 "last_collected": str(assignment[5]) if assignment[5] else None,
                 "previous_price": str(assignment[6]) if assignment[6] else None,
-                "new_price": str(assignment[7]) if assignment[7] else None,
+                "new_price": str(assignment[7]) if assignment[7] != None else None,
                 "collected_at": str(assignment[8]) if assignment[8] else None,
                 "comment": assignment[9],
                 "code": assignment[10],
@@ -640,6 +646,8 @@ class AssignmentModel(db.Model):
                 "substitution_variety_created_at": str(assignment[26]) if assignment[26] else None,
                 "substitution_variety_approved_by": assignment[27],
                 "substitution_variety_code": assignment[28],
+                "is_monthly": assignment[29],
+                "price_change": str(assignment[30]) if assignment[6] and assignment[7] else None
             }
 
 
@@ -669,6 +677,8 @@ class AssignmentModel(db.Model):
     @classmethod
     def filter_current_assignments(cls, filter):
 
+        print("Filtering current assignments")
+
         base_query = f""" {ASSIGNMENT_VIEW_QUERY}
                         WHERE CONCAT(
                             COALESCE(id, ''), 
@@ -685,13 +695,23 @@ class AssignmentModel(db.Model):
         search = "%" + filter['search'] + "%"
         values = [search]
 
+        print("Search")
+        print(base_query)
+
+        if filter.get('is_monthly_check', None):
+            base_query = base_query + (' AND is_monthly = 1' if is_quarterly_month() == False else '')
+
+        print("Search")
+        print(base_query)
 
         if filter.get('collector_id'):
-            base_query = base_query + " AND collector_id = %s "
+            base_query = base_query + " AND collector_id = %s " 
             values.append(filter['collector_id'])
+
+        print("Search")
+        print(base_query)
         
         if filter.get('price_status'):
-
 
 
             if filter['price_status'] == 'missing':
@@ -721,7 +741,7 @@ class AssignmentModel(db.Model):
             if filter['collection_process'] == 'substituted':
                 base_query = base_query + " AND substitution_assignment_id is not null"
 
-        if filter['requested_substitution_status']:
+        if filter.get('requested_substitution_status'):
             base_query = base_query + " AND request_substitution_status = %s "
             values.append(filter['requested_substitution_status'])
            
@@ -730,19 +750,23 @@ class AssignmentModel(db.Model):
 
         db_cursor = portal_db_conn.cursor()
 
+        print(base_query, tuple(values))
+
         db_cursor.execute( base_query, tuple(values) )
         total_records = len(db_cursor.fetchall())
+        print("Total records", 'First Fetch All')
         portal_db_conn.close()
 
 
-        if filter['sort_by'] in main_columns:
+        if filter.get('sort_by') in main_columns:
 
             if filter['sort_desc'] == "true":
                 base_query = base_query + f" ORDER BY {filter['sort_by']} DESC "
+
             else:
                  base_query = base_query + f" ORDER BY {filter['sort_by']} ASC "
         
-        if filter['page'] and filter['rows_per_page']:
+        if filter.get('page') and filter.get('rows_per_page'):
 
             if int(filter['rows_per_page']) > 0 :
 
@@ -751,8 +775,8 @@ class AssignmentModel(db.Model):
 
                 base_query = base_query + f" LIMIT {offset}, {max_rows} "
         
-        assignments =  cls.get_assignments_from_DB(base_query, tuple(values))
-
+        assignments =  cls.get_assignments_from_DB( base_query, tuple(values))
+        
         return {"assignments": assignments, "count": total_records}
 
 # ___________________ ASSIGNMENT STATISTICS______________________

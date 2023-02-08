@@ -1,11 +1,16 @@
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import create_engine
 import mysql.connector
-from env import PORTAL_CONFIGS
+from env import PORTAL_CONFIGS, PORTAL_CONFIG_STRING
 
 db = SQLAlchemy()
 
 def get_portal_db_connection():
     return mysql.connector.connect(**PORTAL_CONFIGS)
+
+
+def get_sql_alchemy_db_connection():
+    return create_engine(PORTAL_CONFIG_STRING)
 
 
 
