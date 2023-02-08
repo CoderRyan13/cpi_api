@@ -21,6 +21,12 @@ from resources.collector_prices import CollectorAssignmentPrice
 from resources.collector_requested_substitution import CollectorRequestSubstitution
 from resources.collector_variety import CollectorVariety, CollectorVarietyList, CollectorVarietyListByCollector, CollectorVarietyListByProductId
 from resources.collector_product import CollectorProduct, CollectorProductList
+from resources.working_price import WorkingPrice
+from resources.substitution_back_history import SubstitutionBackHistory
+from resources.quality_assurance_assignment import CollectorQualityAssuranceAssignment, CollectorPortalQualityAssuranceAssignment
+from resources.price_imputation import PriceImputation
+from resources.outlier_detection import OutlierDetections , OutlierDetection
+
 
 # from resources.outlet import Outlet, OutletList
 from resources.collector_substitution import SubstitutionList 
@@ -187,7 +193,26 @@ api.add_resource( UploadExcel, '/api/read-excel')
 # api.add_resource( ConfigureAutomatedAssignments, '/api/configure-automated-assignments/<string:filename>' )
 api.add_resource( ConfigureAssignments, '/api/configure-assignments/<string:filename>' )
 
- 
+
+# ---------------------- PORTAL WORKING PRICE ENDPOINTS ----------------------
+api.add_resource( WorkingPrice, '/api/working-prices')
+api.add_resource( SubstitutionBackHistory, '/api/substitution-back-history' )
+
+# ---------------------- MOBILE APP QUALITY ASSURANCE ENDPOINTS ----------------------
+api.add_resource( CollectorQualityAssuranceAssignment, '/api/quality-assurance-assignment')
+
+# ---------------------- PORTAL QUALITY ASSURANCE ENDPOINTS ----------------------
+api.add_resource( CollectorPortalQualityAssuranceAssignment, '/api/portal-quality-assurance-assignment')
+
+# ---------------------- PRICE IMPUTATION PORTAL ENDPOINTS ----------------------
+api.add_resource( PriceImputation, '/api/price-imputation')
+
+# ---------------------- PRICE OUTLIERS DETECTION PORTAL ENDPOINTS ----------------------
+api.add_resource( OutlierDetections, '/api/price-outlier-detection')
+api.add_resource( OutlierDetection, '/api/price-outlier-detection/<int:id>')
+
+
+
 #RUNS THE API
 if __name__ == '__main__':
     app.run( host='0.0.0.0', port=8080, debug=True )

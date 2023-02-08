@@ -6,6 +6,7 @@ class CollectorAreaModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
     areaid = db.Column(db.String(255), nullable=False)
+    
     # outlets = db.relationship("CollectorOutletModel", backref="area")
   
     def __init__(self, name, areaid, _id=None, outlets=None):
@@ -18,8 +19,6 @@ class CollectorAreaModel(db.Model):
         return str(self.json())
 
     def json(self): 
-
-
         return {
             "id": self.id,
             "name": self.name,
