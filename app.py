@@ -1,5 +1,5 @@
 from datetime import timedelta
-from flask import Flask
+from flask import Flask, jsonify
 from flask_restful import Api
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
@@ -35,8 +35,12 @@ from werkzeug.exceptions import HTTPException
 from flask_cors import CORS
 
 from resources.time_period import CurrentTimePeriod, TimePeriods
-from resources.collector_user import ChangePassword, Login, User, VerifyToken
+from resources.collector_user import ChangePassword, Login, Logout, User, VerifyToken, Users, UsersID
 
+import os
+from flask_migrate import Migrate
+
+from blocklist import BLOCKLIST
 # from data_loaders.areas import AreasRawDataLoader
 # from data_loaders.outlets import OutletsRawDataLoader
 # from data_loaders.varieties import VarietiesRawDataLoader
@@ -55,13 +59,17 @@ app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=20)
 
 jwt = JWTManager(app)
 
-
 #CONFIGURES THE DATA BASE CONNECTION
 app.config['SQLALCHEMY_DATABASE_URI'] = PORTAL_CONFIG_STRING
+# app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///data.db")
+# app.config['SQLALCHEMY_BINDS'] = {'cpi': 'sqlite:///data.db' }    
 # app.config['SQLALCHEMY_BINDS'] = {'cpi': 'mysql://sib_gian:Letmein123!@192.168.0.3/cpi2' }
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
+migrate = Migrate(app, db)
+# with app.app_context():
+#         db.create_all()
 
 @app.errorhandler(HTTPException)
 def handle_root_exception(error):
@@ -70,6 +78,22 @@ def handle_root_exception(error):
         'status': error.code,
         'description': error.description,
     }, error.code
+
+
+#checks if jwt is in blocklist (jti)
+@jwt.token_in_blocklist_loader 
+def check_if_token_in_blocklist(jwt_header, jwt_payload):
+    return jwt_payload["jti"] in BLOCKLIST
+
+#if the above is true then this will run
+@jwt.revoked_token_loader
+def revoked_token_callback(jwt_header, jwt_payload):
+    return (
+        jsonify(
+            {"description": "The token has been revoked.", "error": "token_revoked"}
+        ),
+        401
+    )
 
 
 ################## THE RESOURCES TO THE API ####################
@@ -165,9 +189,12 @@ api.add_resource( CurrentTimePeriod, '/api/current-time-period')
 
 # ---------------------- AUTHENTICATION ----------------------
 api.add_resource( Login, '/api/login')
+api.add_resource(Logout, '/api/logout')
 api.add_resource( VerifyToken, '/api/verify-token/<string:type>')
 api.add_resource( ChangePassword, '/api/change-password/<int:id>')
 api.add_resource( User, '/api/user')
+api.add_resource(Users, '/api/users') # get and create users
+api.add_resource(UsersID, '/api/users/<int:id>')
 
 
 # ---------------------- DATA LOADERS FROM SIMA ----------------------

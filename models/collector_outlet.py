@@ -15,10 +15,12 @@ class CollectorOutletModel(db.Model):
     note = db.Column(db.String(1000), nullable=False)
     phone = db.Column(db.Integer, nullable=True)
     area_id = db.Column(db.Integer, db.ForeignKey("collector_area.id"), nullable=False)
+    operating_hours = db.Column(db.String(255), nullable=True)
+    image = db.Column(db.LargeBinary, nullable=True)
  
     area = db.relationship("CollectorAreaModel", backref="outlets")
 
-    def __init__(self, est_name, address, phone, area_id, lat, long, note, cpi_outlet_id=None, _id=None, ):
+    def __init__(self, est_name, address, phone, area_id, lat, long, note, operating_hours, image, cpi_outlet_id=None, _id=None, ):
 
         self.id = _id
         self.cpi_outlet_id = cpi_outlet_id
@@ -29,6 +31,8 @@ class CollectorOutletModel(db.Model):
         self.lat = lat
         self.long = long
         self.note = note
+        self.operating_hours = operating_hours
+        self.image = image
         
 
     def __str__(self):
@@ -46,7 +50,9 @@ class CollectorOutletModel(db.Model):
             'address': self.address,
             'phone': self.phone,
             'area_id': self.area_id,
-            "area_name": self.area.name if self.area else None
+            "area_name": self.area.name if self.area else None,
+            "operating_hours": self.operating_hours,
+            "image": self.image
         }
 
     def save_to_db(self):
@@ -78,6 +84,8 @@ class CollectorOutletModel(db.Model):
         self.lat = new_outlet.lat
         self.long = new_outlet.long
         self.note = new_outlet.note
+        self.operating_hours = new_outlet.operating_hours
+        self.image = new_outlet.image
         db.session.commit()
 
     def delete(self):
@@ -94,7 +102,9 @@ class CollectorOutletModel(db.Model):
             lat=outlet[4],
             _long=outlet[5],
             phone=outlet[6],
-            area_id=outlet[7]
+            area_id=outlet[7],
+            operating_hours=outlet[8],
+            image=outlet[9]
         )
         
         return new_outlet
@@ -116,7 +126,9 @@ class CollectorOutletModel(db.Model):
                 outlet['area_id'],
                 outlet['lat'] if outlet['lat'] else 0,
                 outlet['long'] if outlet['long'] else 0,
-                outlet['note']
+                outlet['note'],
+                outlet['operating_hours'],
+                outlet['image']
             )
             db.session.add(new_outlet)
             db.session.commit()
@@ -137,7 +149,9 @@ class CollectorOutletModel(db.Model):
             new_outlet.area_id = outlet['area_id'],
             new_outlet.lat = outlet['lat'] if outlet['lat'] else 0,
             new_outlet.long = outlet['long'] if outlet['long'] else 0,
-            new_outlet.note = outlet['note']
+            new_outlet.note = outlet['note'],
+            new_outlet.operating_hours = outlet['operating_hours']
+            new_outlet.image = outlet['image']
             
             db.session.commit()
         

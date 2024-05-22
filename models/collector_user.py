@@ -10,14 +10,16 @@ class CollectorUserModel(db.Model):
     password = db.Column(db.Text, nullable=False)
     area_id = db.Column(db.Integer, db.ForeignKey('collector_area.id'), nullable=True)
     type = db.Column(db.Enum('collector', 'HQ'), nullable=False)
+    status = db.Column(db.Enum('activated', 'deactivated'), nullable=False)
 
-    def __init__(self, name, email, username, password, area_id, type):
+    def __init__(self, name, email, username, password, area_id, type, status):
         self.name = name
         self.email = email
         self.username = username
         self.password = password
         self.area_id = area_id
         self.type = type
+        self.status = status
 
     def __repr__(self):
         return '<CollectorUserModel %r>' % self.name
@@ -30,7 +32,8 @@ class CollectorUserModel(db.Model):
             'username': self.username,
             'password': None,
             'area_id': self.area_id,
-            'type': self.type
+            'type': self.type,
+            'status': self.status
         }
 
     @classmethod
@@ -59,4 +62,10 @@ class CollectorUserModel(db.Model):
         self.email = user_data['email']
         self.type = user_data['type']
         self.area_id = user_data['area_id'] if user_data['type'] == 'collector' else None
+        self.status = user_data['status']
         db.session.commit()
+
+    @classmethod
+    def find_all(cls):
+        return cls.query.all()
+    

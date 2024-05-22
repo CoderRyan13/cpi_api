@@ -33,8 +33,8 @@ class QualityAssuranceAssignmentModel(db.Model):
     time_period = db.Column(db.Date, nullable=False)
     collector_price = db.Column(db.Float, nullable=False)
     hq_price = db.Column(db.Float, nullable=False)
-    collector_comment = db.Column(db.String, nullable=True)
-    hq_comment = db.Column(db.String, nullable=True)
+    collector_comment = db.Column(db.String(255), nullable=True)
+    hq_comment = db.Column(db.String(255), nullable=True)
 
     
     def __init__(self, assignment_id, hq_id, time_period, collector_price, hq_price, collector_comment, hq_comment, _id=None):
